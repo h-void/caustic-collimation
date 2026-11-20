@@ -10,6 +10,12 @@
 > **Solo Self-Initiated Work** · *Part II of the [Perceptual Computation](#perceptual-computation-series) pure-code media series*  
 > *From Measuring Light ([COLLIMA](https://github.com/h-void/collima)) to Sculpting Light* — Instead of discarding off-axis coma, astigmatism, chromatic dispersion, and Total Internal Reflection as optical defects, **Caustic Collimation** turns a 3D signed-distance optical bench into a real-time audiovisual sculpture instrument.
 
+<p align="center">
+  <a href="https://h-void.github.io/caustic-collimation/?lang=en">
+    <img src="https://raw.githubusercontent.com/h-void/h-void/main/assets/previews/caustic-showcase.jpg" alt="CAUSTIC COLLIMATION — Live 3D SDF Optical Bench and [P] 2D Geometric Ray-Tracing Schematic" width="100%" />
+  </a>
+</p>
+
 ---
 
 ## Mathematical & Technical Architecture
