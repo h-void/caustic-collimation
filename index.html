@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en" data-print-mode="false" data-view-mode="bench">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CAUSTIC COLLIMATION // 光軸與焦散</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,4 28,26 4,26' fill='none' stroke='%23E8E4DC' stroke-width='2'/%3E%3Cline x1='2' y1='17' x2='15' y2='15' stroke='%23E8E4DC' stroke-width='1.5'/%3E%3Cline x1='17' y1='15' x2='30' y2='12' stroke='%233B82F6' stroke-width='1.5'/%3E%3Cline x1='17' y1='16' x2='30' y2='21' stroke='%23EF4444' stroke-width='1.5'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <canvas id="stage-canvas" aria-label="Caustic Collimation 3D Optical Bench"></canvas>
+
+    <header class="hud-topbar hud-chrome">
+      <div class="hud-brand">
+        <div id="hud-eyebrow" class="hud-eyebrow">WORK 02 // COMPUTATIONAL OPTICS &amp; VISUAL MUSIC</div>
+        <h1 id="hud-title" class="hud-title">CAUSTIC COLLIMATION</h1>
+        <div id="hud-subtitle" class="hud-subtitle">
+          光軸與焦散 · Sculpting Off-Axis Aberrations &amp; Spectral Caustics
+        </div>
+      </div>
+
+      <nav class="hud-actions-right" aria-label="Optical bench controls">
+        <button id="btn-view-mode" class="hud-pill" type="button">View: 3D Bench [V]</button>
+        <button id="btn-breathing" class="hud-pill" type="button">Drift: Still [B]</button>
+        <button id="btn-print-mode" class="hud-pill" type="button">Archival Lithograph [P]</button>
+        <button id="btn-reset-bench" class="hud-pill" type="button">Collimate / Reset [R]</button>
+        <button id="btn-lang-toggle" class="hud-pill" type="button">繁體</button>
+        <a
+          id="link-github-source"
+          class="hud-pill hud-chrome"
+          href="https://github.com/h-void/caustic-collimation"
+          target="_blank"
+          rel="noopener noreferrer"
+          >GitHub Source ↗</a
+        >
+      </nav>
+    </header>
+
+    <section class="hud-bottombar hud-chrome" aria-label="Optical presets and telemetry">
+      <div class="hud-controls-row">
+        <div class="hud-presets-group" role="group" aria-label="Optical bench presets">
+          <button id="preset-pill-1" class="hud-pill is-active" type="button">1 · Off-Axis Coma</button>
+          <button id="preset-pill-2" class="hud-pill" type="button">2 · Double Flint Prism</button>
+          <button id="preset-pill-3" class="hud-pill" type="button">3 · Anamorphic Astigmatism</button>
+          <button id="preset-pill-4" class="hud-pill" type="button">4 · Zero-Beat Collimation</button>
+          <button id="preset-pill-5" class="hud-pill" type="button">5 · Five-Element Cavity</button>
+        </div>
+
+        <div class="hud-vernier-group">
+          <label id="lbl-dispersion" for="slider-dispersion" class="hud-vernier-label">Cauchy γD</label>
+          <input
+            id="slider-dispersion"
+            type="range"
+            min="1.0"
+            max="6.0"
+            step="0.1"
+            value="3.5"
+          />
+          <span id="val-dispersion" class="hud-vernier-value">3.5×</span>
+        </div>
+
+        <div class="hud-telemetry-group">
+          <span class="telemetry-item">
+            <span id="lbl-telemetry-tilt" class="telemetry-label">Net Tilt Θ</span>
+            <span id="val-tilt-deg" class="telemetry-val">0.0°</span>
+          </span>
+          <span class="telemetry-item">
+            <span id="lbl-telemetry-beat" class="telemetry-label">Prism Beat Δf</span>
+            <span id="val-beat-hz" class="telemetry-val">0.00 Hz</span>
+          </span>
+          <span class="telemetry-item">
+            <span id="lbl-telemetry-selected" class="telemetry-label">Active Element</span>
+            <span id="val-selected-elem" class="telemetry-val">#1</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="hud-footer-row">
+        <button id="audio-pill" class="hud-audio-pill hud-chrome" type="button">
+          🔇 Click or press any key to activate procedural sound
+        </button>
+        <div id="hud-interaction-hint" class="hud-hint">
+          Drag lens: translate (x, z) · Shift+Drag / Right-Drag / Ring: tilt (±35°) · Keys 1–5, V, P, M, R
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
