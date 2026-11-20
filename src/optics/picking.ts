@@ -40,12 +40,12 @@ export function createDefaultCameraMapping(
     viewMode,
     aspect: safeAspect,
     orthoHalfZ: 3.12,
-    centerZ: 0.05,
+    centerZ: 0.02,
     centerX: 0.0,
-    eye: [-1.42, 3.88, 0.08],
-    target: [0.0, 0.0, 0.08],
+    eye: [-1.52, 4.18, -0.02],
+    target: [0.0, 0.0, -0.02],
     up: [1.0, 0.0, 0.0],
-    fovYRad: (36.0 * Math.PI) / 180.0,
+    fovYRad: (36.5 * Math.PI) / 180.0,
   };
 }
 

@@ -161,6 +161,7 @@ export class OpticalBenchRenderer {
   private isLoopRunning = false;
   private startTimeMs = 0;
   private isDragging = false;
+  private hasUserSelected = false;
   private baseDragThetaX0 = 0;
   private prePrintViewMode: ViewMode | null = null;
   private onFrameTick?: () => void;
@@ -278,31 +279,40 @@ export class OpticalBenchRenderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
     const { width, height } = this.syncCanvasPixelSize();
-    const accScale0 = Math.min(0.28, 256 / Math.max(width, height));
-    const liveAccW = Math.max(16, Math.round(width * accScale0));
-    const liveAccH = Math.max(16, Math.round(height * accScale0));
+    const { accumW: liveAccW, accumH: liveAccH } = this.computeLiveAccumSize(width, height);
     this.mainTargets = this.allocateTargetSet(liveAccW, liveAccH, width, height, false);
     this.clearAccumTarget(this.mainTargets);
 
     // Synchronous 100-step boot warmup (67,200 multi-bounce 3D SDF rays >= 65,536!)
     const cam = this.getCameraMapping(width / Math.max(1, height));
+    const accScale = liveAccH / 420.0;
     this.runPhotonAccumulationSteps(BOOT_WARMUP_STEPS, this.mainTargets, cam, this.bench.elements, {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
       beamRadiusY: 0.20,
       focalPlaneZ: 1.92,
-      focalSlabHalf: 0.32,
+      focalSlabHalf: 0.34,
       fanSpreadRad: 0.014,
-      beamHalfWidthPx: 1.15,
-      rayGain: 0.034,
-      airyRadiusPx: 3.8,
-      airyGain: 0.042,
-      maxMarchSteps: 11,
-      beamMask: 15,
+      beamHalfWidthPx: Math.max(1.15, 1.30 * accScale),
+      rayGain: 0.044,
+      airyRadiusPx: Math.max(6.5, 10.5 * accScale),
+      airyGain: 0.052,
+      maxMarchSteps: 14,
+      beamMask: 3,
     });
     this.simSteps += BOOT_WARMUP_STEPS;
     this.renderMainResolve(cam);
     this.pollGlError();
+  }
+
+  private computeLiveAccumSize(width: number, height: number): { accumW: number; accumH: number } {
+    const maxAcc = this.caps.isSoftwareGl ? 520 : 800;
+    const capRatio = this.caps.isSoftwareGl ? 0.58 : 0.65;
+    const accScale = Math.min(capRatio, maxAcc / Math.max(width, height));
+    return {
+      accumW: Math.max(16, Math.round(width * accScale)),
+      accumH: Math.max(16, Math.round(height * accScale)),
+    };
   }
 
   public getCameraMapping(aspect?: number): BenchCameraMapping {
@@ -315,6 +325,9 @@ export class OpticalBenchRenderer {
 
   public setDragging(active: boolean): void {
     this.isDragging = active;
+    if (active) {
+      this.hasUserSelected = true;
+    }
     if (!active && this.bench.elements.length > 0) {
       this.baseDragThetaX0 = this.bench.elements[0].thetaX;
     }
@@ -350,17 +363,19 @@ export class OpticalBenchRenderer {
     const w = this.mainTargets.resolveW;
     const h = this.mainTargets.resolveH;
     const cam = this.getCameraMapping(w / Math.max(1, h));
-    this.runPhotonAccumulationSteps(12, this.mainTargets, cam, this.bench.elements, {
+    const accScale = this.mainTargets.accumH / 420.0;
+    this.runPhotonAccumulationSteps(16, this.mainTargets, cam, this.bench.elements, {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
       beamRadiusY: 0.20,
       focalPlaneZ: 1.92,
-      focalSlabHalf: 0.32,
+      focalSlabHalf: 0.34,
       fanSpreadRad: 0.014,
-      beamHalfWidthPx: 1.15,
-      rayGain: 0.056,
-      airyRadiusPx: 9.0,
-      airyGain: 0.038,
+      beamHalfWidthPx: Math.max(1.15, 1.30 * accScale),
+      rayGain: 0.052,
+      airyRadiusPx: Math.max(6.5, 10.5 * accScale),
+      airyGain: 0.052,
+      beamMask: 3,
     });
   }
 
@@ -382,17 +397,19 @@ export class OpticalBenchRenderer {
     const w = this.mainTargets.resolveW;
     const h = this.mainTargets.resolveH;
     const cam = this.getCameraMapping(w / Math.max(1, h));
-    this.runPhotonAccumulationSteps(16, this.mainTargets, cam, this.bench.elements, {
+    const accScale = this.mainTargets.accumH / 420.0;
+    this.runPhotonAccumulationSteps(18, this.mainTargets, cam, this.bench.elements, {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
       beamRadiusY: 0.20,
       focalPlaneZ: 1.92,
-      focalSlabHalf: 0.32,
+      focalSlabHalf: 0.34,
       fanSpreadRad: 0.014,
-      beamHalfWidthPx: 1.15,
-      rayGain: 0.056,
-      airyRadiusPx: 9.0,
-      airyGain: 0.038,
+      beamHalfWidthPx: Math.max(1.15, 1.30 * accScale),
+      rayGain: 0.052,
+      airyRadiusPx: Math.max(6.5, 10.5 * accScale),
+      airyGain: 0.048,
+      beamMask: 3,
     });
     this.renderMainResolve(cam);
   }
@@ -406,17 +423,19 @@ export class OpticalBenchRenderer {
     const w = this.mainTargets.resolveW;
     const h = this.mainTargets.resolveH;
     const cam = this.getCameraMapping(w / Math.max(1, h));
-    this.runPhotonAccumulationSteps(12, this.mainTargets, cam, this.bench.elements, {
+    const accScale = this.mainTargets.accumH / 420.0;
+    this.runPhotonAccumulationSteps(16, this.mainTargets, cam, this.bench.elements, {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
       beamRadiusY: 0.20,
       focalPlaneZ: 1.92,
-      focalSlabHalf: 0.32,
+      focalSlabHalf: 0.34,
       fanSpreadRad: 0.014,
-      beamHalfWidthPx: 1.15,
-      rayGain: 0.056,
-      airyRadiusPx: 9.0,
-      airyGain: 0.038,
+      beamHalfWidthPx: Math.max(1.15, 1.30 * accScale),
+      rayGain: 0.052,
+      airyRadiusPx: Math.max(6.5, 10.5 * accScale),
+      airyGain: 0.052,
+      beamMask: 3,
     });
   }
 
@@ -454,9 +473,7 @@ export class OpticalBenchRenderer {
     const { width, height, resized } = this.syncCanvasPixelSize();
     if (resized) {
       this.disposeTargetSet(this.mainTargets);
-      const accScale = Math.min(0.28, 256 / Math.max(width, height));
-      const liveAccW = Math.max(16, Math.round(width * accScale));
-      const liveAccH = Math.max(16, Math.round(height * accScale));
+      const { accumW: liveAccW, accumH: liveAccH } = this.computeLiveAccumSize(width, height);
       this.mainTargets = this.allocateTargetSet(liveAccW, liveAccH, width, height, false);
       this.markOpticalGeometryDirty();
     }
@@ -477,6 +494,7 @@ export class OpticalBenchRenderer {
     }
 
     const cam = this.getCameraMapping(width / Math.max(1, height));
+    const accScale = this.mainTargets.accumH / 420.0;
     const convergedIdle =
       this.accumFrames >= 140 && !this.isDragging && !this.bench.breathingEnabled;
     this.stepPhotonAccumulation(this.mainTargets, cam, this.bench.elements, {
@@ -484,14 +502,14 @@ export class OpticalBenchRenderer {
       beamRadiusX: 0.36,
       beamRadiusY: 0.20,
       focalPlaneZ: 1.92,
-      focalSlabHalf: 0.32,
+      focalSlabHalf: 0.34,
       fanSpreadRad: 0.014,
-      beamHalfWidthPx: 1.15,
-      rayGain: 0.034,
-      airyRadiusPx: 3.8,
-      airyGain: 0.042,
+      beamHalfWidthPx: Math.max(1.15, 1.30 * accScale),
+      rayGain: 0.044,
+      airyRadiusPx: Math.max(6.5, 10.5 * accScale),
+      airyGain: 0.052,
       maxMarchSteps: 20,
-      beamMask: 7,
+      beamMask: 3,
       raysPerBandOverride: convergedIdle ? 24 : RAYS_PER_BAND,
     });
     this.simSteps++;
@@ -545,13 +563,14 @@ export class OpticalBenchRenderer {
   }
 
   private syncCanvasPixelSize(): { width: number; height: number; resized: boolean } {
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const dpr = this.caps.isSoftwareGl ? 1.0 : Math.min(window.devicePixelRatio || 1, 2.0);
     const cssW = Math.max(16, this.canvas.clientWidth || window.innerWidth || 1280);
     const cssH = Math.max(16, this.canvas.clientHeight || window.innerHeight || 800);
     const rawW = cssW * dpr;
     const rawH = cssH * dpr;
-    const capScale = Math.min(1.0, 640 / Math.max(rawW, rawH));
-    const maxDim = Math.min(this.caps.maxTargetDim, 640);
+    const maxCap = this.caps.isSoftwareGl ? 960 : 1600;
+    const capScale = Math.min(1.0, maxCap / Math.max(rawW, rawH));
+    const maxDim = Math.min(this.caps.maxTargetDim, maxCap);
     const targetW = Math.min(maxDim, Math.max(16, Math.round(rawW * capScale)));
     const targetH = Math.min(maxDim, Math.max(16, Math.round(rawH * capScale)));
     const resized = this.canvas.width !== targetW || this.canvas.height !== targetH;
@@ -1131,10 +1150,10 @@ export class OpticalBenchRenderer {
         camMarchSteps: 12,
         printMode: this.bench.printMode,
         isSchematicView: this.bench.viewMode === 'schematic',
-        showHudHandles: !this.bench.printMode,
+        showHudHandles: !this.bench.printMode && this.hasUserSelected,
         selectedElemIdx: this.bench.selectedElementIndex,
-        exposure: this.bench.printMode ? 2.85 : 3.45,
-        rimScale: 1.0,
+        exposure: this.bench.printMode ? 2.45 : 3.05,
+        rimScale: 1.08,
         emitterZ: -2.85,
         focalScaleZ: 2.35,
       },

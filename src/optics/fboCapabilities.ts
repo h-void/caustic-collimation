@@ -5,6 +5,26 @@ export interface FboCapabilities {
   type: number;
   filter: number;
   maxTargetDim: number;
+  isSoftwareGl: boolean;
+}
+
+function detectSoftwareRenderer(gl: WebGL2RenderingContext): boolean {
+  let rendererStr = '';
+  try {
+    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+    if (dbg) {
+      rendererStr = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '');
+    }
+    if (!rendererStr) {
+      rendererStr = String(gl.getParameter(gl.RENDERER) || '');
+    }
+  } catch {
+    rendererStr = '';
+  }
+  while (gl.getError() !== gl.NO_ERROR) {
+    // Drain any probe error
+  }
+  return /swiftshader|llvmpipe|softpipe|software|mesa offscreen|basic render/i.test(rendererStr);
 }
 
 /**
@@ -15,6 +35,7 @@ export function probeFboCapabilities(gl: WebGL2RenderingContext): FboCapabilitie
   const maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
   const maxRb = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE) as number;
   const maxTargetDim = Math.max(256, Math.min(maxTex || 4096, maxRb || 4096));
+  const isSoftwareGl = detectSoftwareRenderer(gl);
 
   const extFloat = gl.getExtension('EXT_color_buffer_float');
   // Optional float linear filtering (not required for HALF_FLOAT in WebGL2, safe to probe)
@@ -56,6 +77,7 @@ export function probeFboCapabilities(gl: WebGL2RenderingContext): FboCapabilitie
         type: gl.HALF_FLOAT,
         filter: gl.LINEAR,
         maxTargetDim,
+        isSoftwareGl,
       };
     }
   }
@@ -71,5 +93,6 @@ export function probeFboCapabilities(gl: WebGL2RenderingContext): FboCapabilitie
     type: gl.UNSIGNED_BYTE,
     filter: gl.NEAREST,
     maxTargetDim,
+    isSoftwareGl,
   };
 }

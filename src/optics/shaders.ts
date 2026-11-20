@@ -501,7 +501,8 @@ void main() {
 
   gl_Position = clip;
   int bandIdx = min(6, rayInStep / u_raysPerBand);
-  v_radiance = BAND_RGB[bandIdx] * (flux * u_rayGain * u_batchScale);
+  float segWeight = (segIdx == 0) ? 0.32 : 1.0;
+  v_radiance = BAND_RGB[bandIdx] * (flux * segWeight * u_rayGain * u_batchScale);
 }
 `;
 
