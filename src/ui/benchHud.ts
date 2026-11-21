@@ -56,6 +56,15 @@ export class BenchHudController {
   public setLocale(next: SupportedLocale): void {
     this.lang = next;
     document.documentElement.lang = next;
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('lang') !== next) {
+        url.searchParams.set('lang', next);
+        window.history.replaceState(null, '', url.toString());
+      }
+    } catch {
+      // Ignore history API restrictions
+    }
     this.renderLocaleStrings();
     this.refreshTelemetry();
   }
@@ -145,6 +154,7 @@ export class BenchHudController {
 
   private renderLocaleStrings(): void {
     const msg = LOCALES[this.lang];
+    document.title = msg.pageTitle;
 
     const setText = (id: string, text: string) => {
       const el = document.getElementById(id);

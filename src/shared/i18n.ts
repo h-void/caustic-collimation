@@ -1,6 +1,7 @@
 import type { PresetIndex, SupportedLocale } from './pureCodeContract.ts';
 
 export interface LocaleMessages {
+  pageTitle: string;
   eyebrow: string;
   title: string;
   subtitleBilingual: string;
@@ -27,21 +28,22 @@ export interface LocaleMessages {
 
 export const LOCALES: Record<SupportedLocale, LocaleMessages> = {
   en: {
+    pageTitle: 'CAUSTIC COLLIMATION — Computational Optics & Visual Music',
     eyebrow: 'WORK 02 // COMPUTATIONAL OPTICS & VISUAL MUSIC',
     title: 'CAUSTIC COLLIMATION',
     subtitleBilingual: '光軸與焦散 · Sculpting Off-Axis Aberrations & Spectral Caustics',
-    githubSource: 'GitHub Source ↗',
+    githubSource: 'GitHub Source \u2197\uFE0E',
     viewBench3D: 'View: 3D Bench [V]',
     viewSchematic2D: 'View: 2D Schematic [V]',
     driftOff: 'Drift: Still [B]',
     driftGentle: 'Drift: Gentle [B]',
     printLitho: 'Archival Lithograph [P]',
     resetBench: 'Collimate / Reset [R]',
-    langSwitchLabel: '繁體',
+    langSwitchLabel: '粵 / 繁',
     dispersionLabel: 'Cauchy γD',
-    audioPrompt: '🔇 Click or press any key to activate procedural sound',
-    audioActive: '🔊 Overtone Prism Active · M to Mute',
-    audioMuted: '🔈 Sound Muted · M to Unmute',
+    audioPrompt: '○ Click or press any key to activate procedural sound',
+    audioActive: '● Overtone Prism Active · Press [M] to Mute',
+    audioMuted: '◌ Sound Muted · Press [M] to Unmute',
     interactionHint:
       'Drag lens: translate (x, z) · Shift+Drag / Right-Drag / Ring: tilt (±35°) · Keys 1–5, V, P, M, R',
     telemetryTilt: 'Net Tilt Θ',
@@ -64,10 +66,11 @@ export const LOCALES: Record<SupportedLocale, LocaleMessages> = {
     glassNames: ['N-BK7 Crown', 'SF11 Dense Flint'],
   },
   'zh-HK': {
+    pageTitle: '光軸與焦散 — 計算光學與視覺音樂雕塑',
     eyebrow: '作品 02 // 計算光學與視覺音樂',
     title: '光軸與焦散',
     subtitleBilingual: 'CAUSTIC COLLIMATION · 離軸像差與柯西色散雕塑',
-    githubSource: 'GitHub 原始碼 ↗',
+    githubSource: 'GitHub 原始碼 \u2197\uFE0E',
     viewBench3D: '視角：三維光學台 [V]',
     viewSchematic2D: '視角：二維追迹剖面 [V]',
     driftOff: '呼吸偏轉：靜止 [B]',
@@ -76,9 +79,9 @@ export const LOCALES: Record<SupportedLocale, LocaleMessages> = {
     resetBench: '重設光軸 [R]',
     langSwitchLabel: 'EN',
     dispersionLabel: '色散倍增 γD',
-    audioPrompt: '🔇 點擊或按任意鍵啟動程序化泛音聲場',
-    audioActive: '🔊 泛音稜鏡運行中 · 按 M 靜音',
-    audioMuted: '🔈 已靜音 · 按 M 恢復聲場',
+    audioPrompt: '○ 點擊或按任意鍵啟動程序化泛音聲場',
+    audioActive: '● 泛音稜鏡運行中 · 按 [M] 靜音',
+    audioMuted: '◌ 已靜音 · 按 [M] 恢復聲場',
     interactionHint:
       '左鍵拖曳：平移鏡片 (x, z) · Shift+拖曳 / 右鍵 / 光環：傾角旋轉 (±35°) · 快捷鍵 1–5, V, P, M, R',
     telemetryTilt: '總合傾角 Θ',
