@@ -115,6 +115,31 @@ export async function renderArchivalPlate(
 
     const clampedView = new Uint8ClampedArray(raw.buffer, raw.byteOffset, raw.byteLength);
     ctx.putImageData(new ImageData(clampedView, clampedW, clampedH), 0, 0);
+
+    if (plateId === 'caustic-schematic' && clampedW >= 480 && clampedH >= 240) {
+      const fontPx = Math.max(10, Math.min(24, Math.round(clampedH * 0.0155)));
+      const padX = Math.max(16, Math.round(clampedW * 0.018));
+      const padY = Math.max(14, Math.round(clampedH * 0.024));
+      const dotR = Math.max(2.5, fontPx * 0.27);
+      const baselineY = clampedH - padY;
+
+      ctx.save();
+      ctx.fillStyle = '#b83a2a';
+      ctx.beginPath();
+      ctx.arc(padX + dotR, baselineY - fontPx * 0.34, dotR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(29, 26, 22, 0.72)';
+      ctx.font = `${fontPx}px "DejaVu Sans Mono", "Liberation Mono", ui-monospace, monospace`;
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(
+        'CAUSTIC COLLIMATION · Off-Axis Coma · γD=4.15× · Θ=21.9° · SEED 1468',
+        padX + dotR * 2 + Math.round(fontPx * 0.65),
+        baselineY,
+      );
+      ctx.restore();
+    }
+
     const dataUrl = canvas2d.toDataURL('image/png');
 
     // Release temporary 2D canvas memory immediately

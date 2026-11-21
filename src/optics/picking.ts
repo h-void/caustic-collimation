@@ -36,16 +36,35 @@ export function createDefaultCameraMapping(
   aspect: number,
 ): BenchCameraMapping {
   const safeAspect = Math.max(0.25, Number.isFinite(aspect) ? aspect : 1.6);
+  const baseFovYRad = (36.5 * Math.PI) / 180.0;
+  const baseTanHalfFov = Math.tan(baseFovYRad * 0.5);
+  const baseOffsetX = -1.52;
+  const baseOffsetY = 4.18;
+  const baseDist = Math.hypot(baseOffsetX, baseOffsetY);
+
+  let distScale = 1.0;
+  let benchCenterZ = -0.02;
+  let benchCenterX = 0.0;
+
+  if (safeAspect < 1.5) {
+    const portraitT = Math.max(0.0, Math.min(1.0, (1.5 - safeAspect) / (1.5 - 0.45)));
+    const targetHalfZ = 2.20 - 0.04 * portraitT;
+    const neededDist = targetHalfZ / (baseTanHalfFov * safeAspect);
+    distScale = Math.max(1.0, neededDist / baseDist);
+    benchCenterZ = -0.02 - 0.12 * portraitT;
+    benchCenterX = -0.14 * portraitT;
+  }
+
   return {
     viewMode,
     aspect: safeAspect,
     orthoHalfZ: 3.12,
-    centerZ: 0.02,
-    centerX: 0.0,
-    eye: [-1.52, 4.18, -0.02],
-    target: [0.0, 0.0, -0.02],
+    centerZ: viewMode === 'schematic' ? 0.02 : benchCenterZ,
+    centerX: viewMode === 'schematic' ? 0.0 : benchCenterX,
+    eye: [benchCenterX + baseOffsetX * distScale, baseOffsetY * distScale, benchCenterZ],
+    target: [benchCenterX, 0.0, benchCenterZ],
     up: [1.0, 0.0, 0.0],
-    fovYRad: (36.5 * Math.PI) / 180.0,
+    fovYRad: baseFovYRad,
   };
 }
 
@@ -121,7 +140,7 @@ export function computeViewProjMatrix(cam: BenchCameraMapping): Float32Array {
   const sx = f / safeAspect;
   const sy = f;
   const near = 0.15;
-  const far = 24.0;
+  const far = 48.0;
   const sz = (far + near) / (far - near);
   const tz = -(2.0 * far * near) / (far - near);
 

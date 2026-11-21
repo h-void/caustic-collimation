@@ -914,7 +914,7 @@ void main() {
   vec3 glassRimLin = vec3(0.0);
   if (abs(rayDir.y) > 1e-4) {
     float tPlane = -u_camEye.y / rayDir.y;
-    if (tPlane > 0.0 && tPlane < 15.0) {
+    if (tPlane > 0.0 && tPlane < 60.0) {
       vec3 hitP = u_camEye + rayDir * tPlane;
       vec2 xz = vec2(hitP.x, hitP.z);
       float worldPerPx = (tPlane * 2.0 * u_tanHalfFov) / max(1.0, u_viewportSize.y);

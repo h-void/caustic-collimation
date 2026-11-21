@@ -26,28 +26,38 @@ interface ActiveDragSession {
   origThetaY: number;
 }
 
+const HUD_IDLE_TIMEOUT_MS = 3800;
+
 export class BenchHudController {
   private readonly renderer: OpticalBenchRenderer;
   private readonly audio: PrismAudioEngine;
+  private readonly hudPinned: boolean;
   private lang: SupportedLocale;
   private dragSession: ActiveDragSession | null = null;
   private touchTiltMode = false;
+  private telemetryOpenMobile = false;
+  private idleTimer: number | null = null;
+  private isHudHovered = false;
 
   constructor(
     renderer: OpticalBenchRenderer,
     audio: PrismAudioEngine,
     initialLang: SupportedLocale,
+    hudPinned: boolean = false,
   ) {
     this.renderer = renderer;
     this.audio = audio;
     this.lang = initialLang;
+    this.hudPinned = hudPinned;
 
     this.bindControls();
     this.bindCanvasPointers();
     this.bindKeyboardShortcuts();
+    this.bindHudIdleFade();
     this.syncAudioOpticalParams();
     this.renderLocaleStrings();
     this.refreshTelemetry();
+    this.scheduleHudIdle();
   }
 
   public getLocale(): SupportedLocale {
@@ -107,10 +117,35 @@ export class BenchHudController {
     const selElem = elems[selIdx];
     const elSelected = document.getElementById('val-selected-elem');
     if (elSelected && selElem) {
-      const archName = msg.archetypeNames[selElem.archetype];
-      const glassName = msg.glassNames[selElem.glass];
+      const archShort = msg.archetypeShortNames[selElem.archetype];
+      const glassShort = msg.glassShortNames[selElem.glass];
       const txDeg = ((selElem.thetaX * 180.0) / Math.PI).toFixed(1);
-      elSelected.textContent = `#${selIdx + 1} ${archName} (${glassName}, θx=${txDeg}°)`;
+      elSelected.textContent = `#${selIdx + 1} ${archShort} · ${glassShort} · θx ${txDeg}°`;
+    }
+
+    const colophonText = document.getElementById('print-colophon-text');
+    if (colophonText) {
+      const presetName = msg.presetShortNames[bench.preset];
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      colophonText.textContent =
+        `CAUSTIC COLLIMATION · ${presetName} · γD=${bench.dispersionBoost.toFixed(1)}× · Θ=${tiltDeg.toFixed(1)}° · ${yyyy}-${mm}-${dd}`;
+    }
+
+    const btnTelToggle = document.getElementById('btn-telemetry-toggle');
+    if (btnTelToggle) {
+      const arrow = this.telemetryOpenMobile ? '▾' : '▴';
+      btnTelToggle.textContent =
+        `γD ${bench.dispersionBoost.toFixed(1)}× · Θ ${tiltDeg.toFixed(1)}° · ${msg.telemetryToggleLabel} ${arrow}`;
+      btnTelToggle.classList.toggle('is-active', this.telemetryOpenMobile);
+      btnTelToggle.setAttribute('aria-expanded', this.telemetryOpenMobile ? 'true' : 'false');
+    }
+
+    const bottomBar = document.getElementById('hud-bottombar');
+    if (bottomBar) {
+      bottomBar.classList.toggle('is-telemetry-open', this.telemetryOpenMobile);
     }
 
     for (let p = 1; p <= 5; p++) {
@@ -121,10 +156,12 @@ export class BenchHudController {
       }
     }
 
-    const btnView = document.getElementById('btn-view-mode');
+    const btnView = document.getElementById('btn-view-mode') as HTMLButtonElement | null;
     if (btnView) {
       btnView.textContent =
         bench.viewMode === 'bench' ? msg.viewBench3D : msg.viewSchematic2D;
+      btnView.disabled = bench.printMode;
+      btnView.title = bench.printMode ? msg.viewDisabledInPrint : '';
     }
 
     const btnDrift = document.getElementById('btn-breathing');
@@ -160,6 +197,24 @@ export class BenchHudController {
     }
   }
 
+  private renderShortcutHint(hint: string): void {
+    const el = document.getElementById('hud-interaction-hint');
+    if (!el) return;
+    el.textContent = '';
+    const parts = hint.split(/(\[[^\]]+\])/g);
+    for (const part of parts) {
+      if (!part) continue;
+      if (part.startsWith('[') && part.endsWith(']')) {
+        const code = document.createElement('code');
+        code.className = 'hud-keycap';
+        code.textContent = part;
+        el.appendChild(code);
+      } else {
+        el.appendChild(document.createTextNode(part));
+      }
+    }
+  }
+
   private renderLocaleStrings(): void {
     const msg = LOCALES[this.lang];
     document.title = msg.pageTitle;
@@ -181,11 +236,113 @@ export class BenchHudController {
     setText('lbl-telemetry-tilt', msg.telemetryTilt);
     setText('lbl-telemetry-beat', msg.telemetryBeat);
     setText('lbl-telemetry-selected', msg.telemetrySelected);
-    setText('hud-interaction-hint', msg.interactionHint);
+    this.renderShortcutHint(msg.interactionHint);
 
     for (let p = 1; p <= 5; p++) {
       setText(`preset-pill-${p}`, msg.presetNames[p as PresetIndex]);
     }
+  }
+
+  private clearHudIdleTimer(): void {
+    if (this.idleTimer !== null) {
+      window.clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+  }
+
+  private wakeHud(reschedule: boolean): void {
+    const hudEl = document.getElementById('hud-container');
+    hudEl?.classList.remove('is-idle');
+    if (reschedule) {
+      this.scheduleHudIdle();
+    } else {
+      this.clearHudIdleTimer();
+    }
+  }
+
+  private scheduleHudIdle(): void {
+    this.clearHudIdleTimer();
+    const hudEl = document.getElementById('hud-container');
+    if (!hudEl) return;
+    if (
+      this.hudPinned ||
+      this.renderer.bench.printMode ||
+      this.isHudHovered ||
+      hudEl.matches(':focus-within') ||
+      this.dragSession !== null
+    ) {
+      hudEl.classList.remove('is-idle');
+      return;
+    }
+    this.idleTimer = window.setTimeout(() => {
+      this.idleTimer = null;
+      if (
+        this.hudPinned ||
+        this.renderer.bench.printMode ||
+        this.isHudHovered ||
+        hudEl.matches(':focus-within') ||
+        this.dragSession !== null
+      ) {
+        return;
+      }
+      hudEl.classList.add('is-idle');
+    }, HUD_IDLE_TIMEOUT_MS);
+  }
+
+  private bindHudIdleFade(): void {
+    const hudEl = document.getElementById('hud-container');
+    if (!hudEl) return;
+
+    const onActivity = () => {
+      this.wakeHud(true);
+    };
+
+    const events: (keyof WindowEventMap)[] = [
+      'pointermove',
+      'pointerdown',
+      'touchstart',
+      'keydown',
+      'wheel',
+      'input',
+      'focusin',
+    ];
+    for (const ev of events) {
+      window.addEventListener(ev, onActivity, { passive: true, capture: true });
+    }
+
+    hudEl.addEventListener('pointerover', () => {
+      this.isHudHovered = true;
+      this.wakeHud(false);
+    });
+
+    hudEl.addEventListener('pointerout', (e: PointerEvent) => {
+      const rel = e.relatedTarget as Node | null;
+      if (!rel || !hudEl.contains(rel)) {
+        this.isHudHovered = false;
+        this.scheduleHudIdle();
+      }
+    });
+
+    hudEl.addEventListener('focusin', () => {
+      this.wakeHud(false);
+    });
+
+    hudEl.addEventListener('focusout', (e: FocusEvent) => {
+      const rel = e.relatedTarget as Node | null;
+      if (!rel || !hudEl.contains(rel)) {
+        this.scheduleHudIdle();
+      }
+    });
+  }
+
+  private setPrintModeAndSync(enabled: boolean): void {
+    this.renderer.setPrintMode(enabled);
+    if (enabled) {
+      this.wakeHud(false);
+    } else {
+      this.scheduleHudIdle();
+    }
+    this.refreshTelemetry();
   }
 
   private bindControls(): void {
@@ -198,12 +355,18 @@ export class BenchHudController {
       });
     }
 
+    document.getElementById('btn-telemetry-toggle')?.addEventListener('click', () => {
+      this.telemetryOpenMobile = !this.telemetryOpenMobile;
+      this.refreshTelemetry();
+    });
+
     document.getElementById('btn-drag-mode')?.addEventListener('click', () => {
       this.touchTiltMode = !this.touchTiltMode;
       this.refreshTelemetry();
     });
 
     document.getElementById('btn-view-mode')?.addEventListener('click', () => {
+      if (this.renderer.bench.printMode) return;
       const next = this.renderer.bench.viewMode === 'bench' ? 'schematic' : 'bench';
       this.renderer.setViewMode(next);
       this.refreshTelemetry();
@@ -215,13 +378,11 @@ export class BenchHudController {
     });
 
     document.getElementById('btn-print-mode')?.addEventListener('click', () => {
-      this.renderer.setPrintMode(!this.renderer.bench.printMode);
-      this.refreshTelemetry();
+      this.setPrintModeAndSync(!this.renderer.bench.printMode);
     });
 
     document.getElementById('btn-exit-print')?.addEventListener('click', () => {
-      this.renderer.setPrintMode(false);
-      this.refreshTelemetry();
+      this.setPrintModeAndSync(false);
     });
 
     document.getElementById('btn-reset-bench')?.addEventListener('click', () => {
@@ -413,6 +574,7 @@ export class BenchHudController {
       if (!this.dragSession || e.pointerId !== this.dragSession.pointerId) return;
       this.dragSession = null;
       this.renderer.setDragging(false);
+      this.scheduleHudIdle();
       try {
         if (canvas.hasPointerCapture(e.pointerId)) {
           canvas.releasePointerCapture(e.pointerId);
@@ -445,18 +607,17 @@ export class BenchHudController {
 
       const lower = key.toLowerCase();
       if (lower === 'p') {
-        this.renderer.setPrintMode(!this.renderer.bench.printMode);
-        this.refreshTelemetry();
+        this.setPrintModeAndSync(!this.renderer.bench.printMode);
         return;
       }
       if (key === 'Escape') {
         if (this.renderer.bench.printMode) {
-          this.renderer.setPrintMode(false);
-          this.refreshTelemetry();
+          this.setPrintModeAndSync(false);
         }
         return;
       }
       if (lower === 'v') {
+        if (this.renderer.bench.printMode) return;
         const next = this.renderer.bench.viewMode === 'bench' ? 'schematic' : 'bench';
         this.renderer.setViewMode(next);
         this.refreshTelemetry();

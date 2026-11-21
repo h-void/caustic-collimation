@@ -108,6 +108,12 @@ export function parsePrintFlag(raw: string | null | undefined): boolean {
   return norm === '1' || norm === 'true' || norm === 'yes' || norm === 'on';
 }
 
+export function parseHudPinnedFlag(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  const norm = raw.trim().toLowerCase();
+  return norm === 'pin' || norm === 'pinned';
+}
+
 export interface BootUrlConfig {
   lang: SupportedLocale;
   seed: bigint;
@@ -115,6 +121,7 @@ export interface BootUrlConfig {
   preset: PresetIndex;
   printMode: boolean;
   viewMode: ViewMode;
+  hudPinned: boolean;
 }
 
 export function parseBootUrlConfig(search: string = typeof window !== 'undefined' ? window.location.search : ''): BootUrlConfig {
@@ -125,6 +132,7 @@ export function parseBootUrlConfig(search: string = typeof window !== 'undefined
   const printMode = parsePrintFlag(params.get('print'));
   const rawMode = (params.get('mode') ?? '').trim().toLowerCase();
   const viewMode: ViewMode = printMode || rawMode === 'schematic' ? 'schematic' : 'bench';
+  const hudPinned = parseHudPinnedFlag(params.get('hud'));
   return {
     lang,
     seed,
@@ -132,6 +140,7 @@ export function parseBootUrlConfig(search: string = typeof window !== 'undefined
     preset,
     printMode,
     viewMode,
+    hudPinned,
   };
 }
 

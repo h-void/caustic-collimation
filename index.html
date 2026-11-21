@@ -12,6 +12,11 @@
   <body>
     <canvas id="stage-canvas" aria-label="Caustic Collimation 3D Optical Bench"></canvas>
 
+    <div id="print-colophon" class="print-colophon" aria-live="polite">
+      <span class="print-colophon-dot" aria-hidden="true"></span>
+      <span id="print-colophon-text"></span>
+    </div>
+
     <button
       id="btn-exit-print"
       class="exit-print-pill"
@@ -20,83 +25,100 @@
       × Exit Print [P]
     </button>
 
-    <header class="hud-topbar hud-chrome">
-      <div class="hud-brand">
-        <div id="hud-eyebrow" class="hud-eyebrow">WORK 02 // COMPUTATIONAL OPTICS &amp; VISUAL MUSIC</div>
-        <h1 id="hud-title" class="hud-title">CAUSTIC COLLIMATION</h1>
-        <div id="hud-subtitle" class="hud-subtitle">
-          光軸與焦散 · Sculpting Off-Axis Aberrations &amp; Spectral Caustics
-        </div>
-      </div>
-
-      <nav class="hud-actions-right" aria-label="Optical bench controls">
-        <button id="btn-drag-mode" class="hud-pill" type="button">Drag: Move</button>
-        <button id="btn-view-mode" class="hud-pill" type="button">View: 3D Bench [V]</button>
-        <button id="btn-breathing" class="hud-pill" type="button">Drift: Still [B]</button>
-        <button id="btn-print-mode" class="hud-pill" type="button">Archival Lithograph [P]</button>
-        <button id="btn-reset-bench" class="hud-pill" type="button">Collimate / Reset [R]</button>
-        <button id="btn-lang-toggle" class="hud-pill" type="button">粵 / 繁</button>
-        <a
-          id="link-github-source"
-          class="hud-pill hud-chrome source-link"
-          href="https://github.com/h-void/caustic-collimation"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <svg class="github-mark" viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-          <span id="link-github-label">GitHub Source &#x2197;&#xFE0E;</span>
-        </a>
-      </nav>
-    </header>
-
-    <section class="hud-bottombar hud-chrome" aria-label="Optical presets and telemetry">
-      <div class="hud-controls-row">
-        <div class="hud-presets-group" role="group" aria-label="Optical bench presets">
-          <button id="preset-pill-1" class="hud-pill is-active" type="button">1 · Off-Axis Coma</button>
-          <button id="preset-pill-2" class="hud-pill" type="button">2 · Double Flint Prism</button>
-          <button id="preset-pill-3" class="hud-pill" type="button">3 · Anamorphic Astigmatism</button>
-          <button id="preset-pill-4" class="hud-pill" type="button">4 · Zero-Beat Collimation</button>
-          <button id="preset-pill-5" class="hud-pill" type="button">5 · Five-Element Cavity</button>
+    <div id="hud-container" class="hud-container hud-chrome">
+      <header class="hud-topbar hud-chrome">
+        <div class="hud-brand">
+          <div id="hud-eyebrow" class="hud-eyebrow">WORK 02 // COMPUTATIONAL OPTICS &amp; VISUAL MUSIC</div>
+          <h1 id="hud-title" class="hud-title">CAUSTIC COLLIMATION</h1>
+          <div id="hud-subtitle" class="hud-subtitle">
+            光軸與焦散 · Sculpting Off-Axis Aberrations &amp; Spectral Caustics
+          </div>
         </div>
 
-        <div class="hud-vernier-group">
-          <label id="lbl-dispersion" for="slider-dispersion" class="hud-vernier-label">Cauchy γD</label>
-          <input
-            id="slider-dispersion"
-            type="range"
-            min="1.0"
-            max="6.0"
-            step="0.1"
-            value="3.5"
-          />
-          <span id="val-dispersion" class="hud-vernier-value">3.5×</span>
+        <nav class="hud-actions-right" aria-label="Optical bench controls">
+          <button id="btn-drag-mode" class="hud-pill" type="button">Drag: Move</button>
+          <button id="btn-view-mode" class="hud-pill" type="button">View: 3D Bench [V]</button>
+          <button id="btn-breathing" class="hud-pill" type="button">Drift: Still [B]</button>
+          <button id="btn-print-mode" class="hud-pill" type="button">Archival Lithograph [P]</button>
+          <button id="btn-reset-bench" class="hud-pill" type="button">Collimate / Reset [R]</button>
+          <button id="btn-lang-toggle" class="hud-pill" type="button">繁中</button>
+          <a
+            id="link-github-source"
+            class="hud-pill hud-chrome source-link"
+            href="https://github.com/h-void/caustic-collimation"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg class="github-mark" viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+            <span id="link-github-label">GitHub Source &#x2197;&#xFE0E;</span>
+          </a>
+        </nav>
+      </header>
+
+      <section id="hud-bottombar" class="hud-bottombar hud-chrome" aria-label="Optical presets and telemetry">
+        <div class="hud-controls-stack">
+          <div class="hud-presets-group" role="group" aria-label="Optical bench presets">
+            <button id="preset-pill-1" class="hud-pill is-active" type="button">1 · Off-Axis Coma</button>
+            <button id="preset-pill-2" class="hud-pill" type="button">2 · Double Flint Prism</button>
+            <button id="preset-pill-3" class="hud-pill" type="button">3 · Anamorphic Astigmatism</button>
+            <button id="preset-pill-4" class="hud-pill" type="button">4 · Zero-Beat Collimation</button>
+            <button id="preset-pill-5" class="hud-pill" type="button">5 · Five-Element Cavity</button>
+          </div>
+
+          <div id="hud-telemetry-dock" class="hud-telemetry-dock">
+            <div class="hud-vernier-inline">
+              <label id="lbl-dispersion" for="slider-dispersion" class="hud-vernier-label">Cauchy γD</label>
+              <input
+                id="slider-dispersion"
+                type="range"
+                min="1.0"
+                max="6.0"
+                step="0.1"
+                value="3.5"
+              />
+              <span id="val-dispersion" class="hud-vernier-value">3.5×</span>
+            </div>
+
+            <div class="hud-telemetry-items">
+              <span class="telemetry-item">
+                <span id="lbl-telemetry-tilt" class="telemetry-label">Net Tilt Θ</span>
+                <span id="val-tilt-deg" class="telemetry-val telemetry-val-tilt">0.0°</span>
+              </span>
+              <span class="telemetry-item">
+                <span id="lbl-telemetry-beat" class="telemetry-label">Prism Beat Δf</span>
+                <span id="val-beat-hz" class="telemetry-val telemetry-val-beat">0.00 Hz</span>
+              </span>
+              <span class="telemetry-item telemetry-item-elem">
+                <span id="lbl-telemetry-selected" class="telemetry-label">Active Element</span>
+                <span id="val-selected-elem" class="telemetry-val telemetry-val-elem">#1</span>
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div class="hud-telemetry-group">
-          <span class="telemetry-item">
-            <span id="lbl-telemetry-tilt" class="telemetry-label">Net Tilt Θ</span>
-            <span id="val-tilt-deg" class="telemetry-val">0.0°</span>
-          </span>
-          <span class="telemetry-item">
-            <span id="lbl-telemetry-beat" class="telemetry-label">Prism Beat Δf</span>
-            <span id="val-beat-hz" class="telemetry-val">0.00 Hz</span>
-          </span>
-          <span class="telemetry-item">
-            <span id="lbl-telemetry-selected" class="telemetry-label">Active Element</span>
-            <span id="val-selected-elem" class="telemetry-val">#1</span>
-          </span>
+        <div class="hud-footer-row">
+          <div class="hud-footer-left">
+            <button
+              id="btn-telemetry-toggle"
+              class="hud-pill hud-telemetry-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="hud-telemetry-dock"
+            >
+              Telemetry ▴
+            </button>
+          </div>
+          <button id="audio-pill" class="hud-audio-pill hud-chrome" type="button">
+            ○ Click or press any key for sound
+          </button>
+          <div class="hud-footer-right">
+            <div id="hud-interaction-hint" class="hud-hint">
+              Drag: translate (x, z) · Shift / RMB / Tilt mode: tilt (±35°) · [1–5] [V] [B] [P] [M] [R]
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div class="hud-footer-row">
-        <button id="audio-pill" class="hud-audio-pill hud-chrome" type="button">
-          ○ Click or press any key to activate procedural sound
-        </button>
-        <div id="hud-interaction-hint" class="hud-hint">
-          Drag lens: translate (x, z) · Shift+Drag / Right-Drag / Tilt mode: tilt (±35°) · Keys 1–5, V, B, P, M, R
-        </div>
-      </div>
-    </section>
+      </section>
+    </div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -43,13 +43,14 @@
 | **LMB Drag on Lens** | Translate optical element along the bench axis and lateral plane |
 | **Shift+Drag / RMB / Tilt Mode** | Induce degree-scale off-axis tilt $(\theta_x, \theta_y \in [-35^\circ, +35^\circ])$ and chromatic phase beating |
 | **`1` – `5`** | Switch optical bench presets (`1` Off-Axis Coma · `2` Double Flint Prism · `3` Anamorphic Astigmatism · `4` Zero-Beat Collimation · `5` Five-Element Cavity) |
-| **`V`** | Toggle between 3D Optical Bench and 2D Ray Schematic view |
+| **`V`** | Toggle between 3D Optical Bench and 2D Ray Schematic view *(disabled during `[P]` print mode)* |
 | **`B`** | Toggle gentle breathing drift of the first element's tilt |
 | **`R`** | Collimate / reset the current preset |
 | **`P`** / `?print=1` | Toggle `[P]` 2D Geometric Ray-Tracing Lithograph mode (tap exit chip or press `P`/`Escape` to exit) |
 | **`M`** / Audio Pill | Unlock 7-partial beating overtone prism on first gesture (`150 ms` ramp) |
-| `?lang=en` \| `?lang=zh-HK` | Interface language (`en` default) |
+| `?lang=en` \| `?lang=zh-HK` | Interface language (`en` default; toggle `繁中` / `EN` in topbar) |
 | `?mode=schematic` | Boot directly into the 2D Ray Schematic view |
+| `?hud=pin` \| `?hud=pinned` | Keep the HUD pinned at full opacity (disables automatic 3.8s idle fade) |
 | `?seed=<u64>` | Bit-exact 64-bit `Rng64` Xorshift64* seed (default `1468`) |
 | `?preset=<1..5>` | Boot into preset `1..5` |
 

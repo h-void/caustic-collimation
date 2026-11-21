@@ -285,7 +285,7 @@ export class OpticalBenchRenderer {
 
     // Synchronous 100-step boot warmup (67,200 multi-bounce 3D SDF rays >= 65,536!)
     const cam = this.getCameraMapping(width / Math.max(1, height));
-    const accScale = liveAccH / 420.0;
+    const accScale = Math.min(liveAccW, liveAccH) / 420.0;
     this.runPhotonAccumulationSteps(BOOT_WARMUP_STEPS, this.mainTargets, cam, this.bench.elements, {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
@@ -363,7 +363,7 @@ export class OpticalBenchRenderer {
     const w = this.mainTargets.resolveW;
     const h = this.mainTargets.resolveH;
     const cam = this.getCameraMapping(w / Math.max(1, h));
-    const accScale = this.mainTargets.accumH / 420.0;
+    const accScale = Math.min(this.mainTargets.accumW, this.mainTargets.accumH) / 420.0;
     this.runPhotonAccumulationSteps(16, this.mainTargets, cam, this.bench.elements, {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
@@ -397,7 +397,7 @@ export class OpticalBenchRenderer {
     const w = this.mainTargets.resolveW;
     const h = this.mainTargets.resolveH;
     const cam = this.getCameraMapping(w / Math.max(1, h));
-    const accScale = this.mainTargets.accumH / 420.0;
+    const accScale = Math.min(this.mainTargets.accumW, this.mainTargets.accumH) / 420.0;
     this.runPhotonAccumulationSteps(18, this.mainTargets, cam, this.bench.elements, {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
@@ -415,6 +415,7 @@ export class OpticalBenchRenderer {
   }
 
   public setViewMode(mode: ViewMode): void {
+    if (this.bench.printMode && mode !== 'schematic') return;
     if (this.bench.viewMode === mode) return;
     this.bench.viewMode = mode;
     this.prePrintViewMode = null;
@@ -423,7 +424,7 @@ export class OpticalBenchRenderer {
     const w = this.mainTargets.resolveW;
     const h = this.mainTargets.resolveH;
     const cam = this.getCameraMapping(w / Math.max(1, h));
-    const accScale = this.mainTargets.accumH / 420.0;
+    const accScale = Math.min(this.mainTargets.accumW, this.mainTargets.accumH) / 420.0;
     this.runPhotonAccumulationSteps(16, this.mainTargets, cam, this.bench.elements, {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
@@ -494,7 +495,7 @@ export class OpticalBenchRenderer {
     }
 
     const cam = this.getCameraMapping(width / Math.max(1, height));
-    const accScale = this.mainTargets.accumH / 420.0;
+    const accScale = Math.min(this.mainTargets.accumW, this.mainTargets.accumH) / 420.0;
     const convergedIdle =
       this.accumFrames >= 140 && !this.isDragging && !this.bench.breathingEnabled;
     this.stepPhotonAccumulation(this.mainTargets, cam, this.bench.elements, {

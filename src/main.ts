@@ -47,7 +47,7 @@ function bootstrap(): void {
     }
   });
 
-  hud = new BenchHudController(renderer, audio, bootCfg.lang);
+  hud = new BenchHudController(renderer, audio, bootCfg.lang, bootCfg.hudPinned);
 
   installArchivalPlateExporter(renderer);
 
