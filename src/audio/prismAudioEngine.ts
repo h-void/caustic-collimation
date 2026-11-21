@@ -131,22 +131,32 @@ export class PrismAudioEngine {
   }
 
   async unlock(): Promise<void> {
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended') {
+        await this.ctx.resume().catch(() => {});
+        this.onStateChange?.();
+      }
+      return this.unlockPromise ?? undefined;
+    }
     if (this.unlockPromise) return this.unlockPromise;
 
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+
+    // Create AudioContext and invoke resume() SYNCHRONOUSLY inside the user gesture
+    // BEFORE any await so iOS/iPadOS Safari (WebKit) does not lose activation across fetch().
+    const ctx = new AudioCtx({ latencyHint: 'interactive' });
+    this.ctx = ctx;
+    const initialResume = ctx.resume().catch(() => {});
+
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(MIN_EXP_GAIN, ctx.currentTime);
+    master.connect(ctx.destination);
+    this.masterGain = master;
+
     this.unlockPromise = (async () => {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-
-      const ctx = new AudioCtx({ latencyHint: 'interactive' });
-      this.ctx = ctx;
-
-      const master = ctx.createGain();
-      master.gain.setValueAtTime(MIN_EXP_GAIN, ctx.currentTime);
-      master.connect(ctx.destination);
-      this.masterGain = master;
-
       try {
         if (!ctx.audioWorklet) throw new Error('AudioWorklet unsupported');
         const workletUrl = resolveWorkletUrl('caustic-prism-processor.js');
@@ -166,8 +176,9 @@ export class PrismAudioEngine {
         this.pushParamsToEngine();
       }
 
+      await initialResume;
       if (ctx.state === 'suspended') {
-        await ctx.resume();
+        await ctx.resume().catch(() => {});
       }
 
       this.muted = false;
@@ -185,8 +196,29 @@ export class PrismAudioEngine {
   }
 
   toggleMute(): boolean {
-    if (!this.ctx || !this.masterGain || this.ctx.state !== 'running') {
+    if (!this.ctx || !this.masterGain) {
       void this.unlock();
+      return false;
+    }
+    if (this.ctx.state !== 'running') {
+      this.muted = false;
+      const ctx = this.ctx;
+      const master = this.masterGain;
+      void ctx
+        .resume()
+        .then(() => {
+          if (ctx.state === 'running' && !this.muted) {
+            const now = ctx.currentTime;
+            master.gain.cancelScheduledValues(now);
+            master.gain.setValueAtTime(MIN_EXP_GAIN, now);
+            master.gain.exponentialRampToValueAtTime(TARGET_MASTER_GAIN, now + 0.15);
+          }
+          this.onStateChange?.();
+        })
+        .catch(() => {
+          this.onStateChange?.();
+        });
+      this.onStateChange?.();
       return false;
     }
     this.muted = !this.muted;

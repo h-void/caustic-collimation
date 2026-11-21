@@ -31,6 +31,7 @@ export class BenchHudController {
   private readonly audio: PrismAudioEngine;
   private lang: SupportedLocale;
   private dragSession: ActiveDragSession | null = null;
+  private touchTiltMode = false;
 
   constructor(
     renderer: OpticalBenchRenderer,
@@ -132,6 +133,13 @@ export class BenchHudController {
       btnDrift.classList.toggle('is-active', bench.breathingEnabled);
     }
 
+    const btnDragMode = document.getElementById('btn-drag-mode');
+    if (btnDragMode) {
+      btnDragMode.textContent = this.touchTiltMode ? msg.dragTilt : msg.dragMove;
+      btnDragMode.classList.toggle('is-active', this.touchTiltMode);
+      btnDragMode.setAttribute('aria-pressed', this.touchTiltMode ? 'true' : 'false');
+    }
+
     const btnPrint = document.getElementById('btn-print-mode');
     if (btnPrint) {
       btnPrint.classList.toggle('is-active', bench.printMode);
@@ -166,6 +174,7 @@ export class BenchHudController {
     setText('hud-subtitle', msg.subtitleBilingual);
     setText('link-github-source', msg.githubSource);
     setText('btn-print-mode', msg.printLitho);
+    setText('btn-exit-print', msg.exitPrint);
     setText('btn-reset-bench', msg.resetBench);
     setText('btn-lang-toggle', msg.langSwitchLabel);
     setText('lbl-dispersion', msg.dispersionLabel);
@@ -189,6 +198,11 @@ export class BenchHudController {
       });
     }
 
+    document.getElementById('btn-drag-mode')?.addEventListener('click', () => {
+      this.touchTiltMode = !this.touchTiltMode;
+      this.refreshTelemetry();
+    });
+
     document.getElementById('btn-view-mode')?.addEventListener('click', () => {
       const next = this.renderer.bench.viewMode === 'bench' ? 'schematic' : 'bench';
       this.renderer.setViewMode(next);
@@ -202,6 +216,11 @@ export class BenchHudController {
 
     document.getElementById('btn-print-mode')?.addEventListener('click', () => {
       this.renderer.setPrintMode(!this.renderer.bench.printMode);
+      this.refreshTelemetry();
+    });
+
+    document.getElementById('btn-exit-print')?.addEventListener('click', () => {
+      this.renderer.setPrintMode(false);
       this.refreshTelemetry();
     });
 
@@ -312,7 +331,7 @@ export class BenchHudController {
       const rect = canvas.getBoundingClientRect();
       const cam = this.renderer.getCameraMapping(rect.width / Math.max(1, rect.height));
       const world = screenToBenchXZ(e.clientX, e.clientY, rect, cam);
-      const isRotateMod = e.shiftKey || e.button === 2;
+      const isRotateMod = e.shiftKey || e.button === 2 || this.touchTiltMode;
       const hit = hitTestBench(
         world.x,
         world.z,

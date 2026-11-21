@@ -2,7 +2,7 @@
   "name": "caustic-collimation",
   "version": "1.0.0",
   "private": true,
-  "description": "T2-B CAUSTIC COLLIMATION — WebGL2 3D Implicit SDF Optical Bench, 7-Band Cauchy Dispersion Caustics & Stereo Overtone Prism",
+  "description": "CAUSTIC COLLIMATION — WebGL2 3D Implicit SDF Optical Bench, 7-Band Cauchy Dispersion Caustics & Stereo Overtone Prism",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 4111",

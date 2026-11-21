@@ -12,6 +12,15 @@
   <body>
     <canvas id="stage-canvas" aria-label="Caustic Collimation 3D Optical Bench"></canvas>
 
+    <button
+      id="btn-exit-print"
+      class="exit-print-pill"
+      type="button"
+      aria-label="Exit Archival Lithograph Mode"
+    >
+      × Exit Print [P]
+    </button>
+
     <header class="hud-topbar hud-chrome">
       <div class="hud-brand">
         <div id="hud-eyebrow" class="hud-eyebrow">WORK 02 // COMPUTATIONAL OPTICS &amp; VISUAL MUSIC</div>
@@ -22,6 +31,7 @@
       </div>
 
       <nav class="hud-actions-right" aria-label="Optical bench controls">
+        <button id="btn-drag-mode" class="hud-pill" type="button">Drag: Move</button>
         <button id="btn-view-mode" class="hud-pill" type="button">View: 3D Bench [V]</button>
         <button id="btn-breathing" class="hud-pill" type="button">Drift: Still [B]</button>
         <button id="btn-print-mode" class="hud-pill" type="button">Archival Lithograph [P]</button>

@@ -8,9 +8,12 @@ export interface LocaleMessages {
   githubSource: string;
   viewBench3D: string;
   viewSchematic2D: string;
+  dragMove: string;
+  dragTilt: string;
   driftOff: string;
   driftGentle: string;
   printLitho: string;
+  exitPrint: string;
   resetBench: string;
   langSwitchLabel: string;
   dispersionLabel: string;
@@ -35,9 +38,12 @@ export const LOCALES: Record<SupportedLocale, LocaleMessages> = {
     githubSource: 'GitHub Source \u2197\uFE0E',
     viewBench3D: 'View: 3D Bench [V]',
     viewSchematic2D: 'View: 2D Schematic [V]',
+    dragMove: 'Drag: Move',
+    dragTilt: 'Drag: Tilt (±35°)',
     driftOff: 'Drift: Still [B]',
     driftGentle: 'Drift: Gentle [B]',
     printLitho: 'Archival Lithograph [P]',
+    exitPrint: '× Exit Print [P]',
     resetBench: 'Collimate / Reset [R]',
     langSwitchLabel: '粵 / 繁',
     dispersionLabel: 'Cauchy γD',
@@ -45,7 +51,7 @@ export const LOCALES: Record<SupportedLocale, LocaleMessages> = {
     audioActive: '● Overtone Prism Active · Press [M] to Mute',
     audioMuted: '◌ Sound Muted · Press [M] to Unmute',
     interactionHint:
-      'Drag lens: translate (x, z) · Shift+Drag / Right-Drag / Ring: tilt (±35°) · Keys 1–5, V, P, M, R',
+      'Drag lens: translate (x, z) · Shift+Drag / Right-Drag / Tilt mode: tilt (±35°) · Keys 1–5, V, P, M, R',
     telemetryTilt: 'Net Tilt Θ',
     telemetryBeat: 'Prism Beat Δf',
     telemetrySelected: 'Active Element',
@@ -73,9 +79,12 @@ export const LOCALES: Record<SupportedLocale, LocaleMessages> = {
     githubSource: 'GitHub 原始碼 \u2197\uFE0E',
     viewBench3D: '視角：三維光學台 [V]',
     viewSchematic2D: '視角：二維追迹剖面 [V]',
+    dragMove: '拖曳：平移',
+    dragTilt: '拖曳：傾角 (±35°)',
     driftOff: '呼吸偏轉：靜止 [B]',
     driftGentle: '呼吸偏轉：微動 [B]',
     printLitho: '典藏石版模式 [P]',
+    exitPrint: '× 退出版畫 [P]',
     resetBench: '重設光軸 [R]',
     langSwitchLabel: 'EN',
     dispersionLabel: '色散倍增 γD',
@@ -83,7 +92,7 @@ export const LOCALES: Record<SupportedLocale, LocaleMessages> = {
     audioActive: '● 泛音稜鏡運行中 · 按 [M] 靜音',
     audioMuted: '◌ 已靜音 · 按 [M] 恢復聲場',
     interactionHint:
-      '左鍵拖曳：平移鏡片 (x, z) · Shift+拖曳 / 右鍵 / 光環：傾角旋轉 (±35°) · 快捷鍵 1–5, V, P, M, R',
+      '左鍵拖曳：平移鏡片 (x, z) · Shift+拖曳 / 右鍵 / 傾角模式：旋轉 (±35°) · 快捷鍵 1–5, V, P, M, R',
     telemetryTilt: '總合傾角 Θ',
     telemetryBeat: '色散拍頻 Δf',
     telemetrySelected: '當前光學元件',
