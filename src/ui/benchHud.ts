@@ -172,7 +172,7 @@ export class BenchHudController {
     setText('hud-eyebrow', msg.eyebrow);
     setText('hud-title', msg.title);
     setText('hud-subtitle', msg.subtitleBilingual);
-    setText('link-github-source', msg.githubSource);
+    setText('link-github-label', msg.githubSource);
     setText('btn-print-mode', msg.printLitho);
     setText('btn-exit-print', msg.exitPrint);
     setText('btn-reset-bench', msg.resetBench);

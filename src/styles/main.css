@@ -147,6 +147,16 @@ html[data-print-mode="true"] #audio-pill {
   background: rgba(44, 36, 20, 0.78);
 }
 
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.source-link .github-mark {
+  flex-shrink: 0;
+}
+
 .hud-bottombar {
   position: fixed;
   bottom: 16px;
