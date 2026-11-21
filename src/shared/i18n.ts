@@ -51,7 +51,7 @@ export const LOCALES: Record<SupportedLocale, LocaleMessages> = {
     audioActive: '● Overtone Prism Active · Press [M] to Mute',
     audioMuted: '◌ Sound Muted · Press [M] to Unmute',
     interactionHint:
-      'Drag lens: translate (x, z) · Shift+Drag / Right-Drag / Tilt mode: tilt (±35°) · Keys 1–5, V, P, M, R',
+      'Drag lens: translate (x, z) · Shift+Drag / Right-Drag / Tilt mode: tilt (±35°) · Keys 1–5, V, B, P, M, R',
     telemetryTilt: 'Net Tilt Θ',
     telemetryBeat: 'Prism Beat Δf',
     telemetrySelected: 'Active Element',
@@ -92,7 +92,7 @@ export const LOCALES: Record<SupportedLocale, LocaleMessages> = {
     audioActive: '● 泛音稜鏡運行中 · 按 [M] 靜音',
     audioMuted: '◌ 已靜音 · 按 [M] 恢復聲場',
     interactionHint:
-      '左鍵拖曳：平移鏡片 (x, z) · Shift+拖曳 / 右鍵 / 傾角模式：旋轉 (±35°) · 快捷鍵 1–5, V, P, M, R',
+      '左鍵拖曳：平移鏡片 (x, z) · Shift+拖曳 / 右鍵 / 傾角模式：旋轉 (±35°) · 快捷鍵 1–5, V, B, P, M, R',
     telemetryTilt: '總合傾角 Θ',
     telemetryBeat: '色散拍頻 Δf',
     telemetrySelected: '當前光學元件',

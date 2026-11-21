@@ -281,6 +281,42 @@ html[data-print-mode="true"] #audio-pill {
   }
 }
 
+@media (max-width: 600px) {
+  .hud-topbar {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .hud-brand {
+    max-width: none;
+    padding: 9px 12px;
+  }
+  .hud-actions-right {
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  .hud-pill {
+    font-size: 11.5px;
+    padding: 6px 9px;
+  }
+  .hud-bottombar {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+  }
+}
+
+.hud-title {
+  word-break: keep-all;
+}
+
+.telemetry-label {
+  white-space: nowrap;
+}
+
 .exit-print-pill {
   display: none;
   position: fixed;
