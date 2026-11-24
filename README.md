@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://h-void.github.io/caustic-collimation/?lang=en">
-    <img src="https://raw.githubusercontent.com/h-void/h-void/main/assets/previews/caustic-showcase.jpg" alt="CAUSTIC COLLIMATION — Live 3D SDF Optical Bench and [P] 2D Geometric Ray-Tracing Schematic" width="100%" />
+    <img src="./assets/showcase.jpg" alt="CAUSTIC COLLIMATION — Live 3D SDF Optical Bench and [P] 2D Geometric Ray-Tracing Schematic" width="100%" />
   </a>
 </p>
 
