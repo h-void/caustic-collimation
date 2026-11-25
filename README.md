@@ -7,7 +7,7 @@
 [![WebGL2 & Web Audio](https://img.shields.io/badge/WebGL2_%26_Web_Audio-Real--Time_Optics-1F4E79?style=for-the-badge)](#mathematical--technical-architecture)
 [![License: MIT](https://img.shields.io/badge/License-MIT-4B525C?style=for-the-badge)](./LICENSE)
 
-> *Part II of the [Perceptual Computation](#perceptual-computation-series) browser-native computational media series*  
+> *Part II of the [Zero-Asset Pure-Code Trio](#zero-asset-pure-code-trio) browser-native computational media portfolio*  
 > *From Measuring Light ([COLLIMA](https://github.com/h-void/collima)) to Sculpting Light* — Instead of discarding off-axis coma, astigmatism, chromatic dispersion, and Total Internal Reflection as optical defects, **Caustic Collimation** turns a 3D signed-distance optical bench into a real-time audiovisual sculpture instrument.
 
 <p align="center">
@@ -67,11 +67,10 @@ npm run preview  # Serve production dist/ locally
 
 ---
 
-## Perceptual Computation Series
+## Zero-Asset Pure-Code Trio
 
 | Work | Title | Medium & Algorithms | Live Interactive Work |
 | :---: | :--- | :--- | :--- |
-| **01** | **MORPHOS // 菌脈・聲場** | WebGL2 Gray-Scott PDE · 262k GPU *Physarum* · Async PBO `AudioWorklet` · `[V]` 3D Gallery | [Launch ↗](https://h-void.github.io/morphos/?lang=en) |
+| **01** | **TRAMLINE MIST // 香江雨霧・叮叮** | Procedural 3D HK Diorama · Orthographic 9-Tap Wet Reflector · `[P]` Xuan Engraving · Web Audio | [Launch ↗](https://h-void.github.io/hk-tram-mist/?lang=en) |
 | **02** | **CAUSTIC COLLIMATION // 光軸與焦散** *(this repo)* | WebGL2 3D Implicit SDF Optical Bench · Snell/TIR · 7-Band Cauchy · Beating Overtone Prism | [Launch ↗](https://h-void.github.io/caustic-collimation/?lang=en) |
-| **03** | **POLYGLOT DRIFT // 語流・字陣** | Zero-Asset HK CJK `Canvas2D` · WebGL2 `1+JFA` SDF · `O(KN)` Sliced OT · 3-Formant Audio | [Launch ↗](https://h-void.github.io/polyglot-drift/?lang=en) |
-| **04** | **COLLIMA // Seeing Before the ISP** | Rust 2024 + WebAssembly · 14-Bit Synthetic `.DNG` · Pre-Demosaic WLS Tilt & HCG Noise Lab | [Launch ↗](https://h-void.github.io/collima/?lang=en) |
+| **03** | **COLLIMA // Seeing Before the ISP** | Rust 2024 + WebAssembly · 14-Bit Synthetic `.DNG` · Pre-Demosaic WLS Tilt & HCG Noise Lab | [Launch ↗](https://h-void.github.io/collima/?lang=en) |

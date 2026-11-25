@@ -15,6 +15,7 @@ import type { PresetIndex, SupportedLocale } from '../shared/pureCodeContract';
 interface ActiveDragSession {
   pointerId: number;
   mode: DragInteractionMode;
+  lastEffectiveMode: DragInteractionMode;
   elementIndex: number;
   startClientX: number;
   startClientY: number;
@@ -120,7 +121,9 @@ export class BenchHudController {
       const archShort = msg.archetypeShortNames[selElem.archetype];
       const glassShort = msg.glassShortNames[selElem.glass];
       const txDeg = ((selElem.thetaX * 180.0) / Math.PI).toFixed(1);
-      elSelected.textContent = `#${selIdx + 1} ${archShort} · ${glassShort} · θx ${txDeg}°`;
+      const tyDeg = ((selElem.thetaY * 180.0) / Math.PI).toFixed(1);
+      const tiltStr = Math.abs(selElem.thetaY) > 0.0005 ? `θ ${txDeg}°/${tyDeg}°` : `θx ${txDeg}°`;
+      elSelected.textContent = `#${selIdx + 1} ${archShort} · ${glassShort} · ${tiltStr}`;
     }
 
     const colophonText = document.getElementById('print-colophon-text');
@@ -373,7 +376,7 @@ export class BenchHudController {
     });
 
     document.getElementById('btn-breathing')?.addEventListener('click', () => {
-      this.renderer.bench.breathingEnabled = !this.renderer.bench.breathingEnabled;
+      this.renderer.setBreathingEnabled(!this.renderer.bench.breathingEnabled);
       this.refreshTelemetry();
     });
 
@@ -386,6 +389,8 @@ export class BenchHudController {
     });
 
     document.getElementById('btn-reset-bench')?.addEventListener('click', () => {
+      this.renderer.setBreathingEnabled(false);
+      this.renderer.bench.dispersionBoost = 3.5;
       this.renderer.applyPreset(this.renderer.bench.preset, true);
       this.syncAudioOpticalParams();
       this.refreshTelemetry();
@@ -401,7 +406,7 @@ export class BenchHudController {
       const val = Number(slider.value);
       if (Number.isFinite(val)) {
         this.renderer.bench.dispersionBoost = Math.max(1.0, Math.min(6.0, val));
-        this.renderer.markOpticalGeometryDirty();
+        this.renderer.markOpticalGeometryDirty(this.renderer.bench.breathingEnabled);
         this.syncAudioOpticalParams();
         this.refreshTelemetry();
       }
@@ -424,7 +429,7 @@ export class BenchHudController {
         clearSuppressTimer = window.setTimeout(() => {
           suppressTrailingUnlockClick = false;
           clearSuppressTimer = null;
-        }, 0);
+        }, 120);
       };
 
       audioPill.addEventListener('pointerdown', (e: PointerEvent) => {
@@ -493,12 +498,15 @@ export class BenchHudController {
       const cam = this.renderer.getCameraMapping(rect.width / Math.max(1, rect.height));
       const world = screenToBenchXZ(e.clientX, e.clientY, rect, cam);
       const isRotateMod = e.shiftKey || e.button === 2 || this.touchTiltMode;
+      const allowRotateRing =
+        !this.renderer.bench.printMode && this.renderer.hasUserSelectedElement();
       const hit = hitTestBench(
         world.x,
         world.z,
         this.renderer.bench.elements,
         this.renderer.bench.selectedElementIndex,
         isRotateMod,
+        allowRotateRing,
       );
 
       if (hit.mode === 'none') return;
@@ -511,6 +519,7 @@ export class BenchHudController {
       this.dragSession = {
         pointerId: e.pointerId,
         mode: hit.mode,
+        lastEffectiveMode: hit.mode,
         elementIndex: hit.elementIndex,
         startClientX: e.clientX,
         startClientY: e.clientY,
@@ -540,9 +549,20 @@ export class BenchHudController {
       const cam = this.renderer.getCameraMapping(rect.width / Math.max(1, rect.height));
       const world = screenToBenchXZ(e.clientX, e.clientY, rect, cam);
 
-      // Allow dynamic Shift toggle mid-drag as well
+      // Allow dynamic Shift toggle mid-drag without snapping position or angle
       const effectiveMode: DragInteractionMode =
         e.shiftKey && sess.mode === 'translate' ? 'rotate-drag' : sess.mode;
+      if (effectiveMode !== sess.lastEffectiveMode) {
+        sess.lastEffectiveMode = effectiveMode;
+        sess.startClientX = e.clientX;
+        sess.startClientY = e.clientY;
+        sess.startWorldX = world.x;
+        sess.startWorldZ = world.z;
+        sess.origX = el.x;
+        sess.origZ = el.z;
+        sess.origThetaX = el.thetaX;
+        sess.origThetaY = el.thetaY;
+      }
 
       if (effectiveMode === 'rotate-ring') {
         const angle = Math.atan2(-(world.x - el.x), world.z - el.z);
@@ -592,7 +612,12 @@ export class BenchHudController {
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+      const isRangeInput =
+        target instanceof HTMLInputElement && target.type === 'range';
+      if (
+        target &&
+        (target.tagName === 'TEXTAREA' || (target.tagName === 'INPUT' && !isRangeInput))
+      ) {
         if (e.key !== 'Escape' && e.key.toLowerCase() !== 'p') return;
       }
 
@@ -624,11 +649,13 @@ export class BenchHudController {
         return;
       }
       if (lower === 'b') {
-        this.renderer.bench.breathingEnabled = !this.renderer.bench.breathingEnabled;
+        this.renderer.setBreathingEnabled(!this.renderer.bench.breathingEnabled);
         this.refreshTelemetry();
         return;
       }
       if (lower === 'r') {
+        this.renderer.setBreathingEnabled(false);
+        this.renderer.bench.dispersionBoost = 3.5;
         this.renderer.applyPreset(this.renderer.bench.preset, true);
         this.syncAudioOpticalParams();
         this.refreshTelemetry();

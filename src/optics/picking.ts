@@ -226,18 +226,13 @@ export function hitTestBench(
   elements: readonly OpticalElementState[],
   currentSelectedIndex: number,
   isRotateModifier: boolean,
+  allowRotateRing: boolean = true,
 ): HitTestResult {
   if (elements.length === 0) {
     return { mode: 'none', elementIndex: 0 };
   }
 
   const selIdx = Math.max(0, Math.min(elements.length - 1, currentSelectedIndex));
-  const selElem = elements[selIdx];
-  const ringRadius = selElem.apertureRadius + 0.15;
-  const distToSel = Math.hypot(worldX - selElem.x, worldZ - selElem.z);
-  if (Math.abs(distToSel - ringRadius) <= 0.11) {
-    return { mode: 'rotate-ring', elementIndex: selIdx };
-  }
 
   let bestIdx = selIdx;
   let bestDist = Infinity;
@@ -246,6 +241,20 @@ export function hitTestBench(
     if (d < bestDist) {
       bestDist = d;
       bestIdx = i;
+    }
+  }
+
+  // Clicking directly inside another element's body selects/moves it instead of
+  // being hijacked by the currently selected element's rotate ring.
+  const directInteriorHit =
+    bestIdx !== selIdx && bestDist <= elements[bestIdx].apertureRadius * 0.85;
+
+  if (allowRotateRing && !isRotateModifier && !directInteriorHit) {
+    const selElem = elements[selIdx];
+    const ringRadius = selElem.apertureRadius + 0.15;
+    const distToSel = Math.hypot(worldX - selElem.x, worldZ - selElem.z);
+    if (Math.abs(distToSel - ringRadius) <= 0.11) {
+      return { mode: 'rotate-ring', elementIndex: selIdx };
     }
   }
 

@@ -10,6 +10,7 @@ import {
   computeCameraBasis,
   computeViewProjMatrix,
   createDefaultCameraMapping,
+  MAX_TILT_RAD,
   type BenchCameraMapping,
 } from './picking';
 import {
@@ -160,6 +161,7 @@ export class OpticalBenchRenderer {
   private rafHandle: number | null = null;
   private isLoopRunning = false;
   private startTimeMs = 0;
+  private breathingStartTimeMs = 0;
   private isDragging = false;
   private hasUserSelected = false;
   private baseDragThetaX0 = 0;
@@ -323,6 +325,22 @@ export class OpticalBenchRenderer {
     return createDefaultCameraMapping(this.bench.viewMode, a);
   }
 
+  public hasUserSelectedElement(): boolean {
+    return this.hasUserSelected;
+  }
+
+  public setBreathingEnabled(enabled: boolean): void {
+    this.bench.breathingEnabled = enabled;
+    if (enabled) {
+      this.breathingStartTimeMs = performance.now();
+      if (this.bench.elements.length > 0) {
+        this.baseDragThetaX0 = this.bench.elements[0].thetaX;
+      }
+    } else if (this.bench.elements.length > 0) {
+      this.baseDragThetaX0 = this.bench.elements[0].thetaX;
+    }
+  }
+
   public setDragging(active: boolean): void {
     this.isDragging = active;
     if (active) {
@@ -330,6 +348,7 @@ export class OpticalBenchRenderer {
     }
     if (!active && this.bench.elements.length > 0) {
       this.baseDragThetaX0 = this.bench.elements[0].thetaX;
+      this.breathingStartTimeMs = performance.now();
     }
   }
 
@@ -337,17 +356,21 @@ export class OpticalBenchRenderer {
     // Handled analytically in resolve pass
   }
 
-  public markOpticalGeometryDirty(): void {
+  public markOpticalGeometryDirty(preserveBreathingBase: boolean = false): void {
     this.accumFrames = 0;
     this.stepCounter = 0;
     this.clearAccumTarget(this.mainTargets);
-    if (this.bench.elements.length > 0) {
+    if (!preserveBreathingBase && this.bench.elements.length > 0) {
       this.baseDragThetaX0 = this.bench.elements[0].thetaX;
     }
   }
 
   public applyPreset(preset: PresetIndex, resetSeed: boolean = true): void {
     this.bench.preset = preset;
+    if (preset === 4) {
+      // Zero-Beat Collimation must remain strictly aligned at 0.00 Hz
+      this.bench.breathingEnabled = false;
+    }
     if (resetSeed) {
       this.rng = new Rng64(this.bench.seed);
     }
@@ -358,6 +381,7 @@ export class OpticalBenchRenderer {
     );
     if (this.bench.elements.length > 0) {
       this.baseDragThetaX0 = this.bench.elements[0].thetaX;
+      this.breathingStartTimeMs = performance.now();
     }
     this.markOpticalGeometryDirty();
     const w = this.mainTargets.resolveW;
@@ -444,6 +468,7 @@ export class OpticalBenchRenderer {
     if (this.isLoopRunning) return;
     this.isLoopRunning = true;
     this.startTimeMs = performance.now();
+    this.breathingStartTimeMs = this.startTimeMs;
     if (this.bench.elements.length > 0) {
       this.baseDragThetaX0 = this.bench.elements[0].thetaX;
     }
@@ -476,29 +501,30 @@ export class OpticalBenchRenderer {
       this.disposeTargetSet(this.mainTargets);
       const { accumW: liveAccW, accumH: liveAccH } = this.computeLiveAccumSize(width, height);
       this.mainTargets = this.allocateTargetSet(liveAccW, liveAccH, width, height, false);
-      this.markOpticalGeometryDirty();
+      this.markOpticalGeometryDirty(this.bench.breathingEnabled);
     }
 
-    if (
+    const isBreathingFrame =
       this.bench.breathingEnabled &&
       !this.isDragging &&
       !this.bench.printMode &&
-      this.bench.elements.length > 0
-    ) {
-      const elapsedSec = (nowMs - this.startTimeMs) * 0.001;
+      this.bench.elements.length > 0;
+
+    if (isBreathingFrame) {
+      const elapsedSec = Math.max(0, (nowMs - this.breathingStartTimeMs) * 0.001);
       const delta = ((3.2 * Math.PI) / 180.0) * Math.sin(elapsedSec * 0.55);
       this.bench.elements[0].thetaX = Math.max(
-        -0.61,
-        Math.min(0.61, this.baseDragThetaX0 + delta),
+        -MAX_TILT_RAD,
+        Math.min(MAX_TILT_RAD, this.baseDragThetaX0 + delta),
       );
-      this.markOpticalGeometryDirty();
+      this.markOpticalGeometryDirty(true);
     }
 
     const cam = this.getCameraMapping(width / Math.max(1, height));
     const accScale = Math.min(this.mainTargets.accumW, this.mainTargets.accumH) / 420.0;
     const convergedIdle =
       this.accumFrames >= 140 && !this.isDragging && !this.bench.breathingEnabled;
-    this.stepPhotonAccumulation(this.mainTargets, cam, this.bench.elements, {
+    const stepCfg = {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
       beamRadiusY: 0.20,
@@ -512,7 +538,12 @@ export class OpticalBenchRenderer {
       maxMarchSteps: 20,
       beamMask: 3,
       raysPerBandOverride: convergedIdle ? 24 : RAYS_PER_BAND,
-    });
+    };
+    if (isBreathingFrame) {
+      this.runPhotonAccumulationSteps(3, this.mainTargets, cam, this.bench.elements, stepCfg);
+    } else {
+      this.stepPhotonAccumulation(this.mainTargets, cam, this.bench.elements, stepCfg);
+    }
     this.simSteps++;
     if (!convergedIdle || (this.simSteps & 3) === 0) {
       this.renderMainResolve(cam);

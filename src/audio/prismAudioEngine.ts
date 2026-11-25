@@ -181,11 +181,14 @@ export class PrismAudioEngine {
         await ctx.resume().catch(() => {});
       }
 
-      this.muted = false;
       const now = ctx.currentTime;
       master.gain.cancelScheduledValues(now);
-      master.gain.setValueAtTime(MIN_EXP_GAIN, now);
-      master.gain.exponentialRampToValueAtTime(TARGET_MASTER_GAIN, now + 0.15);
+      if (this.muted) {
+        master.gain.setValueAtTime(MIN_EXP_GAIN, now);
+      } else {
+        master.gain.setValueAtTime(MIN_EXP_GAIN, now);
+        master.gain.exponentialRampToValueAtTime(TARGET_MASTER_GAIN, now + 0.15);
+      }
 
       this.ready = true;
       ctx.onstatechange = () => this.onStateChange?.();
