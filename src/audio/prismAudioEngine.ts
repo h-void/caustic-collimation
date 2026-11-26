@@ -66,6 +66,9 @@ export class PrismAudioEngine {
   private unlockPromise: Promise<void> | null = null;
   private muted = false;
   private ready = false;
+  private visibilityListenerInstalled = false;
+  private suspendedByVisibility = false;
+  private interruptedResumeInstalled = false;
   private backend: 'none' | 'worklet' | 'fallback' = 'none';
   private latestParams: OpticalAudioParams = {
     tiltRad: 0,
@@ -82,7 +85,8 @@ export class PrismAudioEngine {
 
   get audioState(): AudioContextState {
     if (!this.ctx || !this.ready) return 'suspended';
-    return this.ctx.state;
+    const state = this.ctx.state as string;
+    return state === 'interrupted' ? 'suspended' : this.ctx.state;
   }
 
   get isMuted(): boolean {
@@ -130,10 +134,109 @@ export class PrismAudioEngine {
     return removeGateListeners;
   }
 
+  private applyMasterGain(rampSec: number): void {
+    if (!this.ctx || !this.masterGain) return;
+    const now = this.ctx.currentTime;
+    const curVal = Math.max(MIN_EXP_GAIN, this.masterGain.gain.value);
+    this.masterGain.gain.cancelScheduledValues(now);
+    if (this.muted) {
+      if (this.ctx.state === 'running' && rampSec > 0) {
+        this.masterGain.gain.setValueAtTime(curVal, now);
+        this.masterGain.gain.exponentialRampToValueAtTime(MIN_EXP_GAIN, now + rampSec);
+      } else {
+        this.masterGain.gain.setValueAtTime(MIN_EXP_GAIN, now);
+      }
+    } else if (this.ctx.state === 'running') {
+      const startVal = rampSec > 0 ? Math.min(curVal, TARGET_MASTER_GAIN) : MIN_EXP_GAIN;
+      this.masterGain.gain.setValueAtTime(Math.max(MIN_EXP_GAIN, startVal), now);
+      this.masterGain.gain.exponentialRampToValueAtTime(
+        TARGET_MASTER_GAIN,
+        now + Math.max(0.03, rampSec),
+      );
+    }
+  }
+
+  private installInterruptedResumeGate(): void {
+    if (this.interruptedResumeInstalled || typeof window === 'undefined') return;
+    this.interruptedResumeInstalled = true;
+
+    const cleanup = () => {
+      this.interruptedResumeInstalled = false;
+      window.removeEventListener('pointerdown', onResumeGesture, true);
+      window.removeEventListener('keydown', onResumeGesture, true);
+    };
+
+    const onResumeGesture = (e: Event) => {
+      cleanup();
+      if (!this.ctx || this.muted) return;
+      const state = this.ctx.state as string;
+      if (state === 'interrupted' || state === 'suspended') {
+        (e as Event & { __causticAudioUnlocked?: boolean }).__causticAudioUnlocked = true;
+        void this.ctx
+          .resume()
+          .then(() => {
+            if (this.ctx?.state === 'running' && !this.muted) {
+              this.applyMasterGain(0.15);
+            }
+            this.onStateChange?.();
+          })
+          .catch(() => {
+            this.onStateChange?.();
+          });
+      }
+    };
+
+    window.addEventListener('pointerdown', onResumeGesture, true);
+    window.addEventListener('keydown', onResumeGesture, true);
+  }
+
+  private installVisibilityLifecycle(): void {
+    if (this.visibilityListenerInstalled || typeof document === 'undefined') return;
+    this.visibilityListenerInstalled = true;
+
+    document.addEventListener('visibilitychange', () => {
+      if (!this.ctx) return;
+      const state = this.ctx.state as string;
+      if (document.hidden) {
+        if (state === 'running') {
+          this.suspendedByVisibility = true;
+          void this.ctx.suspend().catch(() => {});
+        }
+      } else {
+        const shouldResume =
+          !this.muted &&
+          (this.suspendedByVisibility ||
+            state === 'interrupted' ||
+            (this.ready && state === 'suspended'));
+        this.suspendedByVisibility = false;
+        if (shouldResume && state !== 'closed' && state !== 'running') {
+          void this.ctx
+            .resume()
+            .then(() => {
+              if (this.ctx?.state === 'running' && !this.muted) {
+                this.applyMasterGain(0.15);
+              }
+              this.onStateChange?.();
+            })
+            .catch(() => {
+              if ((this.ctx?.state as string) === 'interrupted') {
+                this.installInterruptedResumeGate();
+              }
+              this.onStateChange?.();
+            });
+        }
+      }
+    });
+  }
+
   async unlock(): Promise<void> {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') {
+      const state = this.ctx.state as string;
+      if (!this.muted && (state === 'suspended' || state === 'interrupted')) {
         await this.ctx.resume().catch(() => {});
+        if (this.ctx.state === 'running' && !this.muted) {
+          this.applyMasterGain(0.15);
+        }
         this.onStateChange?.();
       }
       return this.unlockPromise ?? undefined;
@@ -149,6 +252,15 @@ export class PrismAudioEngine {
     // BEFORE any await so iOS/iPadOS Safari (WebKit) does not lose activation across fetch().
     const ctx = new AudioCtx({ latencyHint: 'interactive' });
     this.ctx = ctx;
+    ctx.onstatechange = () => {
+      const state = ctx.state as string;
+      if (state === 'interrupted') {
+        this.installInterruptedResumeGate();
+      }
+      this.onStateChange?.();
+    };
+    this.installVisibilityLifecycle();
+
     const initialResume = ctx.resume().catch(() => {});
 
     const master = ctx.createGain();
@@ -177,7 +289,8 @@ export class PrismAudioEngine {
       }
 
       await initialResume;
-      if (ctx.state === 'suspended') {
+      const curState = ctx.state as string;
+      if (!this.muted && !document.hidden && (curState === 'suspended' || curState === 'interrupted')) {
         await ctx.resume().catch(() => {});
       }
 
@@ -191,7 +304,9 @@ export class PrismAudioEngine {
       }
 
       this.ready = true;
-      ctx.onstatechange = () => this.onStateChange?.();
+      if ((ctx.state as string) === 'interrupted') {
+        this.installInterruptedResumeGate();
+      }
       this.onStateChange?.();
     })();
 
@@ -201,12 +316,20 @@ export class PrismAudioEngine {
   toggleMute(): boolean {
     if (!this.ctx || !this.masterGain) {
       void this.unlock();
-      return false;
+      return this.muted;
     }
-    if (this.ctx.state !== 'running') {
-      this.muted = false;
-      const ctx = this.ctx;
-      const master = this.masterGain;
+
+    this.muted = !this.muted;
+    const ctx = this.ctx;
+    const master = this.masterGain;
+
+    if (this.muted) {
+      this.applyMasterGain(0.06);
+      this.onStateChange?.();
+      return true;
+    }
+
+    if (ctx.state !== 'running') {
       void ctx
         .resume()
         .then(() => {
@@ -224,17 +347,10 @@ export class PrismAudioEngine {
       this.onStateChange?.();
       return false;
     }
-    this.muted = !this.muted;
-    const now = this.ctx.currentTime;
-    const curVal = Math.max(MIN_EXP_GAIN, this.masterGain.gain.value);
-    this.masterGain.gain.cancelScheduledValues(now);
-    this.masterGain.gain.setValueAtTime(curVal, now);
-    this.masterGain.gain.exponentialRampToValueAtTime(
-      this.muted ? MIN_EXP_GAIN : TARGET_MASTER_GAIN,
-      now + (this.muted ? 0.06 : 0.15),
-    );
+
+    this.applyMasterGain(0.15);
     this.onStateChange?.();
-    return this.muted;
+    return false;
   }
 
   updateOpticalState(params: OpticalAudioParams): void {

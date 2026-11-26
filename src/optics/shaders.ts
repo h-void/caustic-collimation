@@ -101,7 +101,7 @@ float sdfElementLocal(vec3 p, int type, vec4 gA, vec4 gB) {
 `;
 
 /**
- * Single-Pass Warp-Coherent 8-Bounce 3D SDF Optical Ray Tracer (Transform Feedback, 11x vec4 = 44 floats <= 64).
+ * Single-Pass Warp-Coherent 12-Bounce 3D SDF Optical Ray Tracer (Transform Feedback, 15x vec4 = 60 floats <= 64).
  * - Uses tight precomputed world AABBs + local-space sphere-tracing so free-space and interior rays
  *   march directly in element-local coordinates without redundant world-to-local matrix transforms.
  * - Evaluates 7-band Cauchy dispersion, 3D Snell refraction, Schlick Fresnel, bounce-0 secondary reflection, and explicit k_TIR < 0 TIR.
@@ -135,6 +135,10 @@ out vec4 v_p6;
 out vec4 v_p7;
 out vec4 v_p8;
 out vec4 v_p9;
+out vec4 v_p10;
+out vec4 v_p11;
+out vec4 v_p12;
+out vec4 v_p13;
 out vec4 v_airy;
 
 const float HIT_EPS = 1e-3;
@@ -173,7 +177,9 @@ void storeVertex(
   vec4 val,
   inout vec4 p1, inout vec4 p2, inout vec4 p3,
   inout vec4 p4, inout vec4 p5, inout vec4 p6,
-  inout vec4 p7, inout vec4 p8, inout vec4 p9
+  inout vec4 p7, inout vec4 p8, inout vec4 p9,
+  inout vec4 p10, inout vec4 p11, inout vec4 p12,
+  inout vec4 p13
 ) {
   if (idx == 1) p1 = val;
   else if (idx == 2) p2 = val;
@@ -183,7 +189,29 @@ void storeVertex(
   else if (idx == 6) p6 = val;
   else if (idx == 7) p7 = val;
   else if (idx == 8) p8 = val;
-  else p9 = val;
+  else if (idx == 9) p9 = val;
+  else if (idx == 10) p10 = val;
+  else if (idx == 11) p11 = val;
+  else if (idx == 12) p12 = val;
+  else p13 = val;
+}
+
+float computeBenchExitT(vec3 pos, vec3 dir) {
+  float tExit = 7.5;
+  if (dir.z > 0.05) {
+    tExit = min(tExit, max(0.0, (3.45 - pos.z) / dir.z));
+  } else if (dir.z < -0.05) {
+    tExit = min(tExit, max(0.0, (-3.45 - pos.z) / dir.z));
+  }
+  if (abs(dir.x) > 0.05) {
+    float targetX = (dir.x > 0.0) ? 2.85 : -2.85;
+    tExit = min(tExit, max(0.0, (targetX - pos.x) / dir.x));
+  }
+  if (abs(dir.y) > 0.05) {
+    float targetY = (dir.y > 0.0) ? 2.40 : -2.40;
+    tExit = min(tExit, max(0.0, (targetY - pos.y) / dir.y));
+  }
+  return clamp(tExit, 0.0, 7.5);
 }
 
 void main() {
@@ -238,6 +266,10 @@ void main() {
   vec4 p7 = vec4(p, 0.0);
   vec4 p8 = vec4(p, 0.0);
   vec4 p9 = vec4(p, 0.0);
+  vec4 p10 = vec4(p, 0.0);
+  vec4 p11 = vec4(p, 0.0);
+  vec4 p12 = vec4(p, 0.0);
+  vec4 p13 = vec4(p, 0.0);
   vec4 airyOut = vec4(0.0);
 
   int insideIdx = -1;
@@ -252,7 +284,7 @@ void main() {
 
     if (bounce == u_maxBounces) {
       if (insideIdx < 0 && flux > 0.004) {
-        float remT = (I.z > 0.06) ? clamp((3.15 - p.z) / I.z, 0.0, 4.5) : 1.35;
+        float remT = computeBenchExitT(p, I);
         vec3 endP = p + I * remT;
         if (I.z > 0.15) {
           float targetZ = u_focalParams.x + (u4 * 2.0 - 1.0) * u_focalParams.y;
@@ -264,7 +296,17 @@ void main() {
             }
           }
         }
-        p9 = vec4(endP, 0.0);
+        storeVertex(
+          bounce + 1,
+          vec4(endP, 0.0),
+          p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13
+        );
+      } else {
+        storeVertex(
+          bounce + 1,
+          vec4(p, 0.0),
+          p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13
+        );
       }
       break;
     }
@@ -336,7 +378,7 @@ void main() {
     }
 
     if (hitIdx < 0) {
-      float remT = (I.z > 0.06) ? clamp((3.15 - p.z) / I.z, 0.0, 4.5) : 1.35;
+      float remT = computeBenchExitT(p, I);
       vec3 endP = p + I * remT;
       if (insideIdx < 0 && I.z > 0.15) {
         float targetZ = u_focalParams.x + (u4 * 2.0 - 1.0) * u_focalParams.y;
@@ -348,7 +390,11 @@ void main() {
           }
         }
       }
-      storeVertex(bounce + 1, vec4(endP, 0.0), p1, p2, p3, p4, p5, p6, p7, p8, p9);
+      storeVertex(
+        bounce + 1,
+        vec4(endP, 0.0),
+        p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13
+      );
       break;
     }
 
@@ -401,7 +447,11 @@ void main() {
     }
 
     bool keepAlive = (nextFlux > 0.005);
-    storeVertex(bounce + 1, vec4(nextPos, keepAlive ? nextFlux : 0.0), p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    storeVertex(
+      bounce + 1,
+      vec4(nextPos, keepAlive ? nextFlux : 0.0),
+      p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13
+    );
     if (!keepAlive) break;
 
     p = nextPos;
@@ -420,6 +470,10 @@ void main() {
   v_p7 = p7;
   v_p8 = p8;
   v_p9 = p9;
+  v_p10 = p10;
+  v_p11 = p11;
+  v_p12 = p12;
+  v_p13 = p13;
   v_airy = airyOut;
   gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
 }
@@ -472,7 +526,7 @@ void main() {
   }
 
   int rayRow = stepInBatch * u_raysThisStep + rayInStep;
-  int baseX = (rayRow & 63) * 11;
+  int baseX = (rayRow & 63) * 15;
   int texY = rayRow >> 6;
   int segIdx = gl_VertexID >> 1;
   vec4 seg0 = texelFetch(u_rayTex, ivec2(baseX + segIdx, texY), 0);
@@ -552,7 +606,7 @@ void main() {
   int rayInStep = bandIdx * u_raysPerBand + subIdx * 4;
   int rayRow = stepInBatch * u_raysThisStep + rayInStep;
 
-  vec4 airy = texelFetch(u_rayTex, ivec2((rayRow & 63) * 11 + 10, rayRow >> 6), 0);
+  vec4 airy = texelFetch(u_rayTex, ivec2((rayRow & 63) * 15 + 14, rayRow >> 6), 0);
   float flux = airy.w * 4.0;
   if (flux <= 0.004 || u_airyGain <= 0.0) {
     gl_Position = vec4(2.0, 2.0, 2.0, 1.0);

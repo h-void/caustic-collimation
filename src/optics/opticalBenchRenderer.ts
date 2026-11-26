@@ -44,12 +44,38 @@ export const RAYS_PER_STEP = RAYS_PER_BAND * 7; // 672 rays/step -> 67,200 rays 
 export const BOOT_WARMUP_STEPS = 100;
 const MAX_WAVEFRONT_STEPS = 25;
 const RAYS_PER_TEX_ROW = 64;
-const RAY_TEX_WIDTH = RAYS_PER_TEX_ROW * 11; // 704 (<< MAX_TEXTURE_SIZE)
+const RAY_TEX_WIDTH = RAYS_PER_TEX_ROW * 15; // 960 (<< MAX_TEXTURE_SIZE)
 const RAY_TEX_HEIGHT = Math.ceil((MAX_WAVEFRONT_STEPS * RAYS_PER_STEP) / RAYS_PER_TEX_ROW); // 263
-const PATH_SEGMENTS = 9; // 8 surface bounces (0..7) + 1 free-space focal exit segment (8)
-const RAY_PATH_FLOATS = 44; // 11 vec4s: v_p0..v_p9 + v_airy
-const RAY_PATH_BYTES = RAY_PATH_FLOATS * 4; // 176 bytes per ray
+const PATH_SEGMENTS = 13; // 12 surface bounces (0..11) + 1 free-space focal exit segment (12)
+const MAX_GPU_BOUNCES = 12;
+const RAY_PATH_FLOATS = 60; // 15 vec4s: v_p0..v_p13 + v_airy (<= 64 WebGL2 min TF components)
+const RAY_PATH_BYTES = RAY_PATH_FLOATS * 4; // 240 bytes per ray
 const RGBA8_BATCH_SCALE = 0.085;
+
+const TF_VARYINGS = [
+  'v_p0',
+  'v_p1',
+  'v_p2',
+  'v_p3',
+  'v_p4',
+  'v_p5',
+  'v_p6',
+  'v_p7',
+  'v_p8',
+  'v_p9',
+  'v_p10',
+  'v_p11',
+  'v_p12',
+  'v_p13',
+  'v_airy',
+];
+
+export interface OpticalBenchRendererHooks {
+  onFrameTick?: () => void;
+  onContextLost?: () => void;
+  onContextRestored?: () => void;
+  onContextRestoreFailed?: (err: unknown) => void;
+}
 
 export interface RenderTargetSet {
   accumW: number;
@@ -74,6 +100,8 @@ export interface EngineSnapshot {
   rngState: bigint;
   accumFrames: number;
   stepCounter: number;
+  baseDragThetaX0: number;
+  breathingStartTimeMs: number;
 }
 
 function compileShader(gl: WebGL2RenderingContext, type: number, src: string): WebGLShader {
@@ -118,7 +146,7 @@ function createProgram(
 export class OpticalBenchRenderer {
   public readonly canvas: HTMLCanvasElement;
   public readonly gl: WebGL2RenderingContext;
-  public readonly caps: FboCapabilities;
+  public caps!: FboCapabilities;
 
   public bench: BenchState;
   private rng: Rng64;
@@ -129,20 +157,20 @@ export class OpticalBenchRenderer {
   private stepCounter = 0;
   public lastGlError = 0;
 
-  private traceRayProg: WebGLProgram;
-  private beamProg: WebGLProgram;
-  private airyProg: WebGLProgram;
+  private traceRayProg!: WebGLProgram;
+  private beamProg!: WebGLProgram;
+  private airyProg!: WebGLProgram;
   private rgba8AccumProg: WebGLProgram | null = null;
   private resolveBenchProg: WebGLProgram | null = null;
   private resolveSchematicProg: WebGLProgram | null = null;
   private discreteRayProg: WebGLProgram | null = null;
 
-  private emptyVao: WebGLVertexArrayObject;
-  private rayPathVbo: WebGLBuffer;
-  private rayPathTex: WebGLTexture;
-  private tfObj: WebGLTransformFeedback;
-  private discreteRayVao: WebGLVertexArrayObject;
-  private discreteRayVbo: WebGLBuffer;
+  private emptyVao!: WebGLVertexArrayObject;
+  private rayPathVbo!: WebGLBuffer;
+  private rayPathTex!: WebGLTexture;
+  private tfObj!: WebGLTransformFeedback;
+  private discreteRayVao!: WebGLVertexArrayObject;
+  private discreteRayVbo!: WebGLBuffer;
   private discreteRayCapFloats = 0;
 
   private readonly uniformCache = new WeakMap<
@@ -157,26 +185,31 @@ export class OpticalBenchRenderer {
   private readonly scratchBoxMin = new Float32Array(MAX_OPTICAL_ELEMENTS * 4);
   private readonly scratchBoxMax = new Float32Array(MAX_OPTICAL_ELEMENTS * 4);
 
-  private mainTargets: RenderTargetSet;
+  private mainTargets!: RenderTargetSet;
   private rafHandle: number | null = null;
   private isLoopRunning = false;
+  private contextLost = false;
+  private wasRunningBeforeLoss = false;
   private startTimeMs = 0;
   private breathingStartTimeMs = 0;
   private isDragging = false;
   private hasUserSelected = false;
   private baseDragThetaX0 = 0;
   private prePrintViewMode: ViewMode | null = null;
-  private onFrameTick?: () => void;
+  private readonly hooks: OpticalBenchRendererHooks;
 
   constructor(
     canvas: HTMLCanvasElement,
     initialBench: BenchState,
-    onFrameTick?: () => void,
+    hooksOrTick?: (() => void) | OpticalBenchRendererHooks,
   ) {
     this.canvas = canvas;
     this.bench = initialBench;
     this.rng = new Rng64(initialBench.seed);
-    this.onFrameTick = onFrameTick;
+    this.hooks =
+      typeof hooksOrTick === 'function' ? { onFrameTick: hooksOrTick } : (hooksOrTick ?? {});
+    this.baseDragThetaX0 = initialBench.elements[0]?.thetaX ?? 0;
+    this.breathingStartTimeMs = performance.now();
 
     const gl = canvas.getContext('webgl2', {
       alpha: false,
@@ -190,28 +223,66 @@ export class OpticalBenchRenderer {
       throw new Error('WebGL2 is required for Caustic Collimation');
     }
     this.gl = gl;
-    this.caps = probeFboCapabilities(gl);
 
-    const tfVaryings = [
-      'v_p0',
-      'v_p1',
-      'v_p2',
-      'v_p3',
-      'v_p4',
-      'v_p5',
-      'v_p6',
-      'v_p7',
-      'v_p8',
-      'v_p9',
-      'v_airy',
-    ];
-    this.traceRayProg = createProgram(gl, TRACE_RAY_VS, DUMMY_FS, tfVaryings);
+    this.canvas.addEventListener('webglcontextlost', this.handleContextLost, false);
+    this.canvas.addEventListener('webglcontextrestored', this.handleContextRestored, false);
+
+    // Synchronous 100-step boot warmup (67,200 multi-bounce 3D SDF rays >= 65,536!)
+    this.initGlResources(BOOT_WARMUP_STEPS);
+  }
+
+  public isContextLost(): boolean {
+    return this.contextLost || this.gl.isContextLost();
+  }
+
+  private readonly handleContextLost = (e: Event): void => {
+    e.preventDefault();
+    if (this.contextLost) return;
+    this.contextLost = true;
+    this.wasRunningBeforeLoss = this.pauseLoop();
+    this.hooks.onContextLost?.();
+  };
+
+  private readonly handleContextRestored = (): void => {
+    try {
+      if (this.mainTargets) {
+        // Old handles belong to the lost context and must not be deleted on the restored context
+        this.mainTargets.disposed = true;
+      }
+      this.contextLost = false;
+      this.initGlResources(24);
+      this.hooks.onContextRestored?.();
+      if (this.wasRunningBeforeLoss) {
+        this.wasRunningBeforeLoss = false;
+        this.startLoop();
+      }
+    } catch (err) {
+      this.contextLost = true;
+      console.error('[CausticCollimation] Failed to restore WebGL2 context:', err);
+      this.hooks.onContextRestoreFailed?.(err);
+    }
+  };
+
+  private initGlResources(warmupStepCount: number): void {
+    const gl = this.gl;
+    while (gl.getError() !== gl.NO_ERROR) {
+      // Drain any stale context-lost or probe errors before rebuilding
+    }
+    this.lastGlError = 0;
+
+    this.caps = probeFboCapabilities(gl);
+    this.rgba8AccumProg = null;
+    this.resolveBenchProg = null;
+    this.resolveSchematicProg = null;
+    this.discreteRayProg = null;
+
+    this.traceRayProg = createProgram(gl, TRACE_RAY_VS, DUMMY_FS, TF_VARYINGS);
     this.beamProg = createProgram(gl, BEAM_SPLAT_VS, BEAM_SPLAT_FS);
     this.airyProg = createProgram(gl, AIRY_SPLAT_VS, AIRY_SPLAT_FS);
     if (this.caps.fboFormat === 'RGBA8') {
       this.rgba8AccumProg = createProgram(gl, FULLSCREEN_QUAD_VS, RGBA8_ACCUM_FS);
     }
-    if (initialBench.viewMode === 'schematic') {
+    if (this.bench.viewMode === 'schematic') {
       this.resolveSchematicProg = createProgram(gl, FULLSCREEN_QUAD_VS, RESOLVE_SCHEMATIC_FS);
       this.discreteRayProg = createProgram(gl, DISCRETE_RAY_VS, DISCRETE_RAY_FS);
     } else {
@@ -283,12 +354,13 @@ export class OpticalBenchRenderer {
     const { width, height } = this.syncCanvasPixelSize();
     const { accumW: liveAccW, accumH: liveAccH } = this.computeLiveAccumSize(width, height);
     this.mainTargets = this.allocateTargetSet(liveAccW, liveAccH, width, height, false);
+    this.accumFrames = 0;
+    this.stepCounter = 0;
     this.clearAccumTarget(this.mainTargets);
 
-    // Synchronous 100-step boot warmup (67,200 multi-bounce 3D SDF rays >= 65,536!)
     const cam = this.getCameraMapping(width / Math.max(1, height));
     const accScale = Math.min(liveAccW, liveAccH) / 420.0;
-    this.runPhotonAccumulationSteps(BOOT_WARMUP_STEPS, this.mainTargets, cam, this.bench.elements, {
+    this.runPhotonAccumulationSteps(warmupStepCount, this.mainTargets, cam, this.bench.elements, {
       emitterZ: -2.85,
       beamRadiusX: 0.36,
       beamRadiusY: 0.20,
@@ -302,7 +374,7 @@ export class OpticalBenchRenderer {
       maxMarchSteps: 14,
       beamMask: 3,
     });
-    this.simSteps += BOOT_WARMUP_STEPS;
+    this.simSteps += warmupStepCount;
     this.renderMainResolve(cam);
     this.pollGlError();
   }
@@ -329,7 +401,13 @@ export class OpticalBenchRenderer {
     return this.hasUserSelected;
   }
 
+  public resetBreathingPhase(): void {
+    this.breathingStartTimeMs = performance.now();
+  }
+
   public setBreathingEnabled(enabled: boolean): void {
+    const wasEnabled = this.bench.breathingEnabled;
+    if (enabled === wasEnabled) return;
     this.bench.breathingEnabled = enabled;
     if (enabled) {
       this.breathingStartTimeMs = performance.now();
@@ -337,7 +415,9 @@ export class OpticalBenchRenderer {
         this.baseDragThetaX0 = this.bench.elements[0].thetaX;
       }
     } else if (this.bench.elements.length > 0) {
-      this.baseDragThetaX0 = this.bench.elements[0].thetaX;
+      // Restore element 0 cleanly to its un-drifted base angle
+      this.bench.elements[0].thetaX = this.baseDragThetaX0;
+      this.markOpticalGeometryDirty(false);
     }
   }
 
@@ -345,8 +425,7 @@ export class OpticalBenchRenderer {
     this.isDragging = active;
     if (active) {
       this.hasUserSelected = true;
-    }
-    if (!active && this.bench.elements.length > 0) {
+    } else if (!this.bench.breathingEnabled && this.bench.elements.length > 0) {
       this.baseDragThetaX0 = this.bench.elements[0].thetaX;
       this.breathingStartTimeMs = performance.now();
     }
@@ -359,7 +438,9 @@ export class OpticalBenchRenderer {
   public markOpticalGeometryDirty(preserveBreathingBase: boolean = false): void {
     this.accumFrames = 0;
     this.stepCounter = 0;
-    this.clearAccumTarget(this.mainTargets);
+    if (!this.isContextLost()) {
+      this.clearAccumTarget(this.mainTargets);
+    }
     if (!preserveBreathingBase && this.bench.elements.length > 0) {
       this.baseDragThetaX0 = this.bench.elements[0].thetaX;
     }
@@ -383,7 +464,8 @@ export class OpticalBenchRenderer {
       this.baseDragThetaX0 = this.bench.elements[0].thetaX;
       this.breathingStartTimeMs = performance.now();
     }
-    this.markOpticalGeometryDirty();
+    this.markOpticalGeometryDirty(false);
+    if (this.isContextLost()) return;
     const w = this.mainTargets.resolveW;
     const h = this.mainTargets.resolveH;
     const cam = this.getCameraMapping(w / Math.max(1, h));
@@ -412,12 +494,22 @@ export class OpticalBenchRenderer {
       }
       this.bench.viewMode = 'schematic';
       document.documentElement.dataset.viewMode = 'schematic';
-    } else if (this.prePrintViewMode !== null) {
-      this.bench.viewMode = this.prePrintViewMode;
-      this.prePrintViewMode = null;
-      document.documentElement.dataset.viewMode = this.bench.viewMode;
+      if (this.bench.breathingEnabled && this.bench.elements.length > 0) {
+        // Render print lithograph at the un-drifted base angle without baking transient breathing offset
+        this.bench.elements[0].thetaX = this.baseDragThetaX0;
+      }
+    } else {
+      if (this.prePrintViewMode !== null) {
+        this.bench.viewMode = this.prePrintViewMode;
+        this.prePrintViewMode = null;
+        document.documentElement.dataset.viewMode = this.bench.viewMode;
+      }
+      if (this.bench.breathingEnabled) {
+        this.breathingStartTimeMs = performance.now();
+      }
     }
-    this.markOpticalGeometryDirty();
+    this.markOpticalGeometryDirty(this.bench.breathingEnabled);
+    if (this.isContextLost()) return;
     const w = this.mainTargets.resolveW;
     const h = this.mainTargets.resolveH;
     const cam = this.getCameraMapping(w / Math.max(1, h));
@@ -444,7 +536,8 @@ export class OpticalBenchRenderer {
     this.bench.viewMode = mode;
     this.prePrintViewMode = null;
     document.documentElement.dataset.viewMode = mode;
-    this.markOpticalGeometryDirty();
+    this.markOpticalGeometryDirty(this.bench.breathingEnabled);
+    if (this.isContextLost()) return;
     const w = this.mainTargets.resolveW;
     const h = this.mainTargets.resolveH;
     const cam = this.getCameraMapping(w / Math.max(1, h));
@@ -465,18 +558,30 @@ export class OpticalBenchRenderer {
   }
 
   public startLoop(): void {
-    if (this.isLoopRunning) return;
+    if (this.isLoopRunning || this.isContextLost()) return;
     this.isLoopRunning = true;
     this.startTimeMs = performance.now();
-    this.breathingStartTimeMs = this.startTimeMs;
-    if (this.bench.elements.length > 0) {
-      this.baseDragThetaX0 = this.bench.elements[0].thetaX;
+    if (!this.bench.breathingEnabled) {
+      this.breathingStartTimeMs = this.startTimeMs;
+      if (this.bench.elements.length > 0) {
+        this.baseDragThetaX0 = this.bench.elements[0].thetaX;
+      }
     }
 
     const tick = (nowMs: number) => {
       if (!this.isLoopRunning) return;
-      this.renderLiveFrame(nowMs);
-      this.rafHandle = window.requestAnimationFrame(tick);
+      this.rafHandle = null;
+      try {
+        if (!this.isContextLost()) {
+          this.renderLiveFrame(nowMs);
+        }
+      } catch (err) {
+        console.error('[CausticCollimation] Transient live render error:', err);
+      } finally {
+        if (this.isLoopRunning) {
+          this.rafHandle = window.requestAnimationFrame(tick);
+        }
+      }
     };
     this.rafHandle = window.requestAnimationFrame(tick);
   }
@@ -496,6 +601,7 @@ export class OpticalBenchRenderer {
   }
 
   public renderLiveFrame(nowMs: number): void {
+    if (this.isContextLost()) return;
     const { width, height, resized } = this.syncCanvasPixelSize();
     if (resized) {
       this.disposeTargetSet(this.mainTargets);
@@ -548,7 +654,7 @@ export class OpticalBenchRenderer {
     if (!convergedIdle || (this.simSteps & 3) === 0) {
       this.renderMainResolve(cam);
     }
-    this.onFrameTick?.();
+    this.hooks.onFrameTick?.();
   }
 
   public cloneState(): EngineSnapshot {
@@ -564,6 +670,8 @@ export class OpticalBenchRenderer {
       rngState: this.rng.getState(),
       accumFrames: this.accumFrames,
       stepCounter: this.stepCounter,
+      baseDragThetaX0: this.baseDragThetaX0,
+      breathingStartTimeMs: this.breathingStartTimeMs,
     };
   }
 
@@ -579,11 +687,14 @@ export class OpticalBenchRenderer {
     this.rng.setState(snap.rngState);
     this.accumFrames = snap.accumFrames;
     this.stepCounter = snap.stepCounter;
+    this.baseDragThetaX0 = snap.baseDragThetaX0;
+    this.breathingStartTimeMs = snap.breathingStartTimeMs;
     document.documentElement.dataset.printMode = this.bench.printMode ? 'true' : 'false';
     document.documentElement.dataset.viewMode = this.bench.viewMode;
   }
 
   public restoreMainViewport(): void {
+    if (this.isContextLost()) return;
     const gl = this.gl;
     gl.disable(gl.SCISSOR_TEST);
     gl.disable(gl.BLEND);
@@ -1008,7 +1119,7 @@ export class OpticalBenchRenderer {
       }
     }
 
-    // 1. Single-Pass Warp-Coherent 8-Bounce Transform Feedback (traces all steps*672 rays in 1 draw!)
+    // 1. Single-Pass Warp-Coherent 12-Bounce Transform Feedback (traces all steps*672 rays in 1 draw!)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.enable(gl.RASTERIZER_DISCARD);
     gl.useProgram(this.traceRayProg);
@@ -1016,7 +1127,7 @@ export class OpticalBenchRenderer {
     gl.uniform1i(this.uLoc(this.traceRayProg, 'u_baseStep'), baseStep);
     gl.uniform1i(this.uLoc(this.traceRayProg, 'u_raysThisStep'), raysThisStep);
     gl.uniform1i(this.uLoc(this.traceRayProg, 'u_raysPerBand'), raysPerBand);
-    gl.uniform1i(this.uLoc(this.traceRayProg, 'u_maxBounces'), 8);
+    gl.uniform1i(this.uLoc(this.traceRayProg, 'u_maxBounces'), MAX_GPU_BOUNCES);
     gl.uniform1i(this.uLoc(this.traceRayProg, 'u_maxMarchSteps'), opts.maxMarchSteps ?? 64);
     gl.uniform1f(this.uLoc(this.traceRayProg, 'u_gammaD'), gammaD);
     gl.uniform4f(this.uLoc(this.traceRayProg, 'u_jitter'), jx, jy, jz, jw);
@@ -1044,7 +1155,7 @@ export class OpticalBenchRenderer {
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
     gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
 
-    // GPU-resident PBO upload into 704x263 RGBA32F rayPathTex (zero CPU readback, zero VAO divisor staging!)
+    // GPU-resident PBO upload into 960x263 RGBA32F rayPathTex (zero CPU readback, zero VAO divisor staging!)
     const uploadRows = Math.max(1, Math.ceil(totalWavefrontRays / RAYS_PER_TEX_ROW));
     gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, this.rayPathVbo);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
@@ -1096,7 +1207,10 @@ export class OpticalBenchRenderer {
     );
     gl.uniform1f(this.uLoc(this.beamProg, 'u_batchScale'), batchScale);
 
-    const activeSegments = Math.min(PATH_SEGMENTS, elements.length * 2 + 1);
+    const hasPrism = elements.some((e) => e.archetype === 3);
+    const activeSegments = hasPrism
+      ? PATH_SEGMENTS
+      : Math.min(PATH_SEGMENTS, elements.length * 2 + 3);
     gl.drawArraysInstanced(gl.LINES, 0, activeSegments * 2, steps * activeRaysPerStep);
 
     if (opts.airyGain > 0.0) {
@@ -1809,6 +1923,9 @@ export class OpticalBenchRenderer {
   }
 
   public pollGlError(): number {
+    if (this.isContextLost()) {
+      return this.lastGlError;
+    }
     const err = this.gl.getError();
     if (err !== this.gl.NO_ERROR) {
       this.lastGlError = err;

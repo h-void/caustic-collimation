@@ -21,6 +21,7 @@ interface ActiveDragSession {
   startClientY: number;
   startWorldX: number;
   startWorldZ: number;
+  startAngle: number;
   origX: number;
   origZ: number;
   origThetaX: number;
@@ -187,12 +188,12 @@ export class BenchHudController {
 
     const audioPill = document.getElementById('audio-pill');
     if (audioPill) {
-      if (this.audio.audioState !== 'running') {
-        audioPill.textContent = msg.audioPrompt;
-        audioPill.dataset.audioStatus = 'locked';
-      } else if (this.audio.isMuted) {
+      if (this.audio.isMuted) {
         audioPill.textContent = msg.audioMuted;
         audioPill.dataset.audioStatus = 'muted';
+      } else if (this.audio.audioState !== 'running') {
+        audioPill.textContent = msg.audioPrompt;
+        audioPill.dataset.audioStatus = 'locked';
       } else {
         audioPill.textContent = msg.audioActive;
         audioPill.dataset.audioStatus = 'active';
@@ -377,6 +378,7 @@ export class BenchHudController {
 
     document.getElementById('btn-breathing')?.addEventListener('click', () => {
       this.renderer.setBreathingEnabled(!this.renderer.bench.breathingEnabled);
+      this.syncAudioOpticalParams();
       this.refreshTelemetry();
     });
 
@@ -516,6 +518,7 @@ export class BenchHudController {
         this.renderer.markOverlayDirty();
       }
       const el = this.renderer.bench.elements[hit.elementIndex];
+      const startAngle = Math.atan2(-(world.x - el.x), world.z - el.z);
       this.dragSession = {
         pointerId: e.pointerId,
         mode: hit.mode,
@@ -525,6 +528,7 @@ export class BenchHudController {
         startClientY: e.clientY,
         startWorldX: world.x,
         startWorldZ: world.z,
+        startAngle,
         origX: el.x,
         origZ: el.z,
         origThetaX: el.thetaX,
@@ -558,6 +562,7 @@ export class BenchHudController {
         sess.startClientY = e.clientY;
         sess.startWorldX = world.x;
         sess.startWorldZ = world.z;
+        sess.startAngle = Math.atan2(-(world.x - el.x), world.z - el.z);
         sess.origX = el.x;
         sess.origZ = el.z;
         sess.origThetaX = el.thetaX;
@@ -566,7 +571,11 @@ export class BenchHudController {
 
       if (effectiveMode === 'rotate-ring') {
         const angle = Math.atan2(-(world.x - el.x), world.z - el.z);
-        el.thetaX = Math.max(-MAX_TILT_RAD, Math.min(MAX_TILT_RAD, angle));
+        const deltaAngle = Math.atan2(
+          Math.sin(angle - sess.startAngle),
+          Math.cos(angle - sess.startAngle),
+        );
+        el.thetaX = Math.max(-MAX_TILT_RAD, Math.min(MAX_TILT_RAD, sess.origThetaX + deltaAngle));
       } else if (effectiveMode === 'rotate-drag') {
         const dpx = e.clientX - sess.startClientX;
         const dpy = e.clientY - sess.startClientY;
@@ -585,7 +594,15 @@ export class BenchHudController {
         el.z = Math.max(BENCH_BOUNDS.minZ, Math.min(BENCH_BOUNDS.maxZ, sess.origZ + dz));
       }
 
-      this.renderer.markOpticalGeometryDirty();
+      const editedElem0ThetaX =
+        sess.elementIndex === 0 &&
+        (effectiveMode === 'rotate-ring' || effectiveMode === 'rotate-drag');
+      this.renderer.markOpticalGeometryDirty(
+        this.renderer.bench.breathingEnabled && !editedElem0ThetaX,
+      );
+      if (editedElem0ThetaX && this.renderer.bench.breathingEnabled) {
+        this.renderer.resetBreathingPhase();
+      }
       this.syncAudioOpticalParams();
       this.refreshTelemetry();
     });
@@ -609,16 +626,18 @@ export class BenchHudController {
   }
 
   private bindKeyboardShortcuts(): void {
+    const isEditableElement = (el: EventTarget | null): boolean => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+      return el.isContentEditable;
+    };
+
     window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.repeat) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const target = e.target as HTMLElement | null;
-      const isRangeInput =
-        target instanceof HTMLInputElement && target.type === 'range';
-      if (
-        target &&
-        (target.tagName === 'TEXTAREA' || (target.tagName === 'INPUT' && !isRangeInput))
-      ) {
-        if (e.key !== 'Escape' && e.key.toLowerCase() !== 'p') return;
+      if (isEditableElement(e.target) || isEditableElement(document.activeElement)) {
+        return;
       }
 
       const key = e.key;
@@ -650,6 +669,7 @@ export class BenchHudController {
       }
       if (lower === 'b') {
         this.renderer.setBreathingEnabled(!this.renderer.bench.breathingEnabled);
+        this.syncAudioOpticalParams();
         this.refreshTelemetry();
         return;
       }

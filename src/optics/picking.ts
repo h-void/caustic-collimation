@@ -259,16 +259,17 @@ export function hitTestBench(
   }
 
   if (isRotateModifier) {
-    const pickIdx = bestDist <= elements[bestIdx].apertureRadius + 0.45 ? bestIdx : selIdx;
-    return { mode: 'rotate-drag', elementIndex: pickIdx };
+    if (bestDist <= elements[bestIdx].apertureRadius + 0.45) {
+      return { mode: 'rotate-drag', elementIndex: bestIdx };
+    }
+    return { mode: 'none', elementIndex: selIdx };
   }
 
-  if (bestDist <= elements[bestIdx].apertureRadius + 0.65) {
+  if (bestDist <= elements[bestIdx].apertureRadius + 0.25) {
     return { mode: 'translate', elementIndex: bestIdx };
   }
 
-  // Fallback: even if clicking slightly outside, allow smooth manipulation of nearest element
-  return { mode: 'translate', elementIndex: bestIdx };
+  return { mode: 'none', elementIndex: selIdx };
 }
 
 /**

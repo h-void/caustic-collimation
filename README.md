@@ -28,9 +28,9 @@
    - **Cylindrical Anamorphic Lens (`N-BK7`)**: Orthogonal tangential/sagittal Sturm astigmatic focal lines.
 2. **3D Vector Snell Refraction, Schlick Fresnel, $k_{\text{TIR}} < 0$ TIR & 7-Band Cauchy Dispersion**:
    - Evaluates $n(\lambda) = A + \gamma_D B / \lambda^2$ across 7 wavelengths (`420, 460, 500, 545, 590, 635, 680 nm`) for Schott `N-BK7` ($A=1.5046, B=0.00420$) and dense flint `SF11` ($A=1.7432, B=0.01342$), with an interactive artistic dispersion boost $\gamma_D \in [1.0, 6.0]$ (default `3.5×`).
-   - WebGL2 Transform Feedback sphere-traces `672` stratified multi-bounce rays per step (`67,200` rays during the synchronous `100`-step boot warmup), splatting `25%` subsampled Tyndall beams and analytical Bessel Airy diffraction rings $(2 J_1(\rho)/\rho)^2$ with `4×` flux compensation (plus an artistic `2.2×` grazing Fresnel reflection highlight), and automatic `EXT_color_buffer_float` (`RGBA16F → RGBA8` sqrt-encoded accumulation) fallback.
+   - WebGL2 Transform Feedback sphere-traces `672` stratified multi-bounce rays per step (`67,200` rays during the synchronous `100`-step boot warmup) for up to `12` surface bounces (`13` segments across `15 × vec4 = 60` interleaved floats) — paired with a `14`-bounce CPU ray tracer (`src/optics/sdfMath.ts`) with guaranteed free-space bench exit for `[P]` geometric schematics — splatting `25%` subsampled Tyndall beams and analytical Bessel Airy diffraction rings $(2 J_1(\rho)/\rho)^2$ with `4×` flux compensation (plus an artistic `2.2×` grazing Fresnel reflection highlight), and automatic `EXT_color_buffer_float` (`RGBA16F → RGBA8` sqrt-encoded accumulation) fallback.
 3. **7-Partial Stereo Additive Overtone Prism (`public/worklets/caustic-prism-processor.js`)**:
-   - Maps the 7 optical wavelengths to harmonic partials $f_0 r_k$ ($f_0 = 110\text{ Hz}$, $r_k \in \{1.0, 1.5, \dots, 4.0\}$) with degree-scale tilt-driven (`±35°`) chromatic phase beating $\Delta f_k = 5.5\,\frac{n(\lambda_k)-n(\lambda_3)}{n(\lambda_3)-1}\,\Theta\;\text{Hz}$ (`0.00 Hz` consonance when collimated at $\Theta = 0^\circ$).
+   - Maps the 7 optical wavelengths to harmonic partials $f_0 r_k$ ($f_0 = 110\text{ Hz}$, $r_k \in \{1.0, 1.5, \dots, 4.0\}$) with chromatic phase beating $\Delta f_k = 5.5\,\frac{n(\lambda_k)-n(\lambda_3)}{n(\lambda_3)-1}\,\Theta\;\text{Hz}$, where $\Theta = \sqrt{\sum_i (\theta_{x,i}^2 + \theta_{y,i}^2)}$ is the net optical tilt magnitude in **radians** (per-element tilts clamped to `±35°` / `±0.611 rad`, displayed in degrees on the HUD; `0.00 Hz` consonance when collimated at $\Theta = 0$).
 4. **`[P]` Beer-Lambert Archival Lithograph Mode & Deterministic Plate Exporter**:
    - Renders `#F6F4EF` Alabaster Lithograph geometric ray cross-sections with `#141619` Pine Soot, `#1B3B5F` Prussian Blue, `#9E6B2B` Mineral Ochre, and `#C83E2B` Cinnabar inks, plus `window.__renderArchivalPlate(plateId, width, height)` for deterministic plate export.
 
@@ -41,7 +41,7 @@
 | Input / Query Parameter | Action |
 | :--- | :--- |
 | **LMB Drag on Lens** | Translate optical element along the bench axis and lateral plane |
-| **Shift+Drag / RMB / Tilt Mode** | Induce degree-scale off-axis tilt $(\theta_x, \theta_y \in [-35^\circ, +35^\circ])$ and chromatic phase beating |
+| **Shift+Drag / RMB / Tilt Mode / Rotate Ring** | Induce off-axis tilt $(\theta_x, \theta_y \in [-35^\circ, +35^\circ])$ and chromatic phase beating (rotate ring uses smooth relative delta yaw) |
 | **`1` – `5`** | Switch optical bench presets (`1` Off-Axis Coma · `2` Double Flint Prism · `3` Anamorphic Astigmatism · `4` Zero-Beat Collimation · `5` Five-Element Cavity) |
 | **`V`** | Toggle between 3D Optical Bench and 2D Ray Schematic view *(disabled during `[P]` print mode)* |
 | **`B`** | Toggle gentle breathing drift of the first element's tilt |

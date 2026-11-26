@@ -16,7 +16,7 @@ export type Vec3 = [number, number, number];
 
 export const HIT_EPS = 1e-3;
 export const MAX_MARCH_STEPS = 64;
-export const MAX_BOUNCES = 8;
+export const MAX_BOUNCES = 14;
 
 export function safeNormalize3(vx: number, vy: number, vz: number): Vec3 {
   const lenSq = Math.max(vx * vx + vy * vy + vz * vz, 1e-16);
@@ -273,6 +273,26 @@ export function traceOpticalRay3D(
     { x: p[0], y: p[1], z: p[2], flux, isTIR: false },
   ];
 
+  const computeBenchExitT = (pos: Vec3, dirVec: Vec3): number => {
+    let tExit = 4.5;
+    if (dirVec[2] > 0.05) {
+      tExit = Math.min(tExit, Math.max(0.0, (3.05 - pos[2]) / dirVec[2]));
+    } else if (dirVec[2] < -0.05) {
+      tExit = Math.min(tExit, Math.max(0.0, (-3.25 - pos[2]) / dirVec[2]));
+    }
+    if (Math.abs(dirVec[0]) > 0.05) {
+      const targetX = dirVec[0] > 0 ? 2.6 : -2.6;
+      tExit = Math.min(tExit, Math.max(0.0, (targetX - pos[0]) / dirVec[0]));
+    }
+    if (Math.abs(dirVec[1]) > 0.05) {
+      const targetY = dirVec[1] > 0 ? 2.2 : -2.2;
+      tExit = Math.min(tExit, Math.max(0.0, (targetY - pos[1]) / dirVec[1]));
+    }
+    return Math.max(0.0, Math.min(4.5, tExit));
+  };
+
+  let completedAllBounces = true;
+
   for (let bounce = 0; bounce < MAX_BOUNCES; bounce++) {
     let hitIdx = -1;
     let marched = 0.0;
@@ -316,12 +336,10 @@ export function traceOpticalRay3D(
 
     if (hitIdx < 0) {
       // Advance free-space ray to bench exit boundary
-      const remT =
-        I[2] > 0.05
-          ? Math.max(0.0, Math.min(4.5, (3.05 - p[2]) / I[2]))
-          : 1.4;
+      const remT = computeBenchExitT(p, I);
       const endP: Vec3 = [p[0] + I[0] * remT, p[1] + I[1] * remT, p[2] + I[2] * remT];
       vertices.push({ x: endP[0], y: endP[1], z: endP[2], flux, isTIR: false });
+      completedAllBounces = false;
       break;
     }
 
@@ -337,23 +355,43 @@ export function traceOpticalRay3D(
     if (res.isTIR) {
       hadTIR = true;
       I = res.direction;
-      p = [
+      const nextP: Vec3 = [
         p[0] + 3.0 * HIT_EPS * res.orientedNormal[0],
         p[1] + 3.0 * HIT_EPS * res.orientedNormal[1],
         p[2] + 3.0 * HIT_EPS * res.orientedNormal[2],
       ];
+      // Guard against razor-tip apex grazing where inward TIR nudge exits the adjacent face
+      if (insideIdx >= 0 && sdfElementWorld(nextP, elem) >= 0.0) {
+        insideIdx = -1;
+      }
+      p = nextP;
     } else {
       flux *= 1.0 - res.fresnelR;
       I = res.direction;
-      p = [
+      const nextP: Vec3 = [
         p[0] - 3.0 * HIT_EPS * res.orientedNormal[0],
         p[1] - 3.0 * HIT_EPS * res.orientedNormal[1],
         p[2] - 3.0 * HIT_EPS * res.orientedNormal[2],
       ];
-      insideIdx = insideIdx >= 0 ? -1 : hitIdx;
+      if (insideIdx >= 0) {
+        insideIdx = -1;
+      } else {
+        // Guard against razor-tip apex grazing where the inward nudge immediately exits the sharp corner
+        insideIdx = sdfElementWorld(nextP, elem) < 0.0 ? hitIdx : -1;
+      }
+      p = nextP;
     }
 
-    if (flux < 0.02) break;
+    if (flux < 0.02) {
+      completedAllBounces = false;
+      break;
+    }
+  }
+
+  if (completedAllBounces && insideIdx < 0 && flux > 0.004) {
+    const remT = computeBenchExitT(p, I);
+    const endP: Vec3 = [p[0] + I[0] * remT, p[1] + I[1] * remT, p[2] + I[2] * remT];
+    vertices.push({ x: endP[0], y: endP[1], z: endP[2], flux, isTIR: false });
   }
 
   let screenHitX: number | null = null;
