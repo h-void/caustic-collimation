@@ -431,10 +431,17 @@ html[data-print-mode="true"] #audio-pill {
   letter-spacing: 0.04em;
   color: rgba(29, 26, 22, 0.72);
   pointer-events: none;
-  max-width: calc(100vw - 180px);
+  max-width: calc(100vw - 196px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+#print-colophon-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .print-colophon-dot {
@@ -588,7 +595,7 @@ html[data-print-mode="true"] .exit-print-pill {
     left: 12px;
     bottom: 16px;
     font-size: 9.5px;
-    max-width: calc(100vw - 144px);
+    max-width: calc(100vw - 176px);
   }
   .exit-print-pill {
     right: 12px;
