@@ -253,7 +253,7 @@ const BASE_PRESET_ELEMENTS: Record<PresetIndex, readonly OpticalElementState[]> 
 
 /**
  * Builds deterministic optical bench elements for `preset` seeded by `Rng64(seed)`.
- * - Canonical seed 1468n preserves exact calibrated reference geometry; other seeds apply
+ * - Canonical default seed (4201n) preserves exact calibrated reference geometry; other seeds apply
  *   calibrated micro-perturbations so distinct ?seed=<u64> values produce measurably distinct caustics.
  * - Preset 4 strictly keeps x = 0, θx = 0, θy = 0 across ALL seeds so Θ === 0 and beatingHz === 0.
  */
@@ -333,7 +333,7 @@ export function buildTiltMatrixCellElements(tiltDeg: number): OpticalElementStat
 }
 
 /**
- * Builds high-contrast macro elements for 'caustic-thumb' (Page 1 Cover 126x90 pt thumbnail).
+ * Compact high-contrast macro layout for small preview thumbnails ('caustic-thumb').
  */
 export function buildThumbMacroElements(): OpticalElementState[] {
   return [

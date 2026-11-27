@@ -2,7 +2,7 @@ export type SupportedLocale = 'en' | 'zh-HK';
 export type PresetIndex = 1 | 2 | 3 | 4 | 5;
 export type ViewMode = 'bench' | 'schematic';
 
-export const DEFAULT_SEED_U64 = 1468n;
+export const DEFAULT_SEED_U64 = 4201n;
 export const MASK_64 = 0xFFFF_FFFF_FFFF_FFFFn;
 export const GOLDEN_GAMMA = 0x9E37_79B9_7F4A_7C15n;
 export const STAR_MULT = 0x2545_F491_4F6C_DD1Dn;
@@ -78,7 +78,7 @@ export function parseLocaleParam(raw: string | null | undefined): SupportedLocal
 
 /**
  * Parses decimal or 0x-prefixed hex u64 seed.
- * Rejects empty, negative, non-integer, or garbage inputs back to 1468n; masks non-negative BigInts with & 0xFFFFFFFFFFFFFFFFn.
+ * Rejects empty, negative, non-integer, or garbage inputs back to DEFAULT_SEED_U64 (4201n); masks non-negative BigInts with & 0xFFFFFFFFFFFFFFFFn.
  */
 export function parseSeedU64(raw: string | null | undefined): bigint {
   if (raw == null) return DEFAULT_SEED_U64;

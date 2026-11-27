@@ -1,4 +1,5 @@
 import type { OpticalBenchRenderer, RenderTargetSet } from '../optics/opticalBenchRenderer';
+import { DEFAULT_SEED_U64 } from '../shared/benchConfig';
 
 export type ArchivalPlateId =
   | 'caustic-hero'
@@ -12,6 +13,30 @@ const VALID_PLATES = new Set<string>([
   'caustic-tilt-matrix',
   'caustic-thumb',
 ]);
+
+const TILT_MATRIX_LABELS = ['0°', '7°', '15°', '24°'] as const;
+
+function traceRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
+  const radius = Math.max(0, Math.min(r, w * 0.5, h * 0.5));
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.arcTo(x + w, y, x + w, y + radius, radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.arcTo(x + w, y + h, x + w - radius, y + h, radius);
+  ctx.lineTo(x + radius, y + h);
+  ctx.arcTo(x, y + h, x, y + h - radius, radius);
+  ctx.lineTo(x, y + radius);
+  ctx.arcTo(x, y, x + radius, y, radius);
+  ctx.closePath();
+}
 
 /**
  * Deterministic supersampled archival plate exporter (`window.__renderArchivalPlate`).
@@ -133,10 +158,69 @@ export async function renderArchivalPlate(
       ctx.font = `${fontPx}px "DejaVu Sans Mono", "Liberation Mono", ui-monospace, monospace`;
       ctx.textBaseline = 'alphabetic';
       ctx.fillText(
-        'CAUSTIC COLLIMATION · Off-Axis Coma · γD=4.15× · Θ=21.9° · SEED 1468',
+        `CAUSTIC COLLIMATION · Off-Axis Coma · γD=4.15× · Θ=21.9° · SEED ${DEFAULT_SEED_U64.toString(10)}`,
         padX + dotR * 2 + Math.round(fontPx * 0.65),
         baselineY,
       );
+      ctx.restore();
+    }
+
+    if (plateId === 'caustic-tilt-matrix' && clampedW >= 16 && clampedH >= 8) {
+      ctx.save();
+      const lineW = Math.max(1, Math.round(clampedH * 0.0045));
+      const halfLw = lineW * 0.5;
+
+      // Subtle neutral-gray vertical cell dividers
+      ctx.strokeStyle = 'rgba(122, 126, 134, 0.52)';
+      ctx.lineWidth = lineW;
+      ctx.beginPath();
+      for (let c = 1; c <= 3; c++) {
+        const divX = Math.floor((c * clampedW) / 4) + (lineW % 2 === 1 ? 0.5 : 0);
+        ctx.moveTo(divX, lineW);
+        ctx.lineTo(divX, clampedH - lineW);
+      }
+      ctx.stroke();
+
+      // Refined hairline outer frame harmonious with schematic lithograph plates
+      ctx.strokeStyle = 'rgba(138, 142, 150, 0.58)';
+      ctx.lineWidth = lineW;
+      ctx.strokeRect(halfLw, halfLw, clampedW - lineW, clampedH - lineW);
+
+      // High-contrast top-left tilt angle badges (0°, 7°, 15°, 24°), sized to stay sharp when downscaled
+      if (clampedW >= 240 && clampedH >= 80) {
+        const cellWAvg = clampedW / 4;
+        const fontPx = Math.max(12, Math.min(54, Math.round(Math.min(clampedH * 0.080, cellWAvg * 0.105))));
+        const padX = Math.max(8, Math.round(cellWAvg * 0.050));
+        const padY = Math.max(8, Math.round(clampedH * 0.040));
+        const innerX = Math.max(6, Math.round(fontPx * 0.40));
+        const pillH = Math.round(fontPx * 1.46);
+        const radius = Math.max(3, Math.round(fontPx * 0.24));
+        const minPillW = Math.round(fontPx * 2.15);
+
+        ctx.font = `700 ${fontPx}px "DejaVu Sans Mono", "Liberation Mono", ui-monospace, monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+
+        for (let c = 0; c < 4; c++) {
+          const rx = Math.floor((c * clampedW) / 4);
+          const label = TILT_MATRIX_LABELS[c];
+          const metrics = ctx.measureText(label);
+          const pillW = Math.max(minPillW, Math.ceil(metrics.width + innerX * 2));
+          const pillX = rx + padX;
+          const pillY = padY;
+
+          traceRoundedRect(ctx, pillX, pillY, pillW, pillH, radius);
+          ctx.fillStyle = 'rgba(20, 24, 31, 0.84)';
+          ctx.fill();
+
+          const ascent = metrics.actualBoundingBoxAscent || fontPx * 0.72;
+          const descent = metrics.actualBoundingBoxDescent || fontPx * 0.10;
+          const baselineY = pillY + pillH * 0.5 + (ascent - descent) * 0.5;
+          ctx.fillStyle = '#F3F2EE';
+          ctx.fillText(label, pillX + pillW * 0.5, baselineY);
+        }
+      }
+
       ctx.restore();
     }
 

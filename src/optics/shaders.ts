@@ -1,8 +1,8 @@
 // GLSL ES 3.00 Shaders for Caustic Collimation (WebGL2)
 // Mirrors src/optics/sdfMath.ts 1:1 for all 5 3D SDF archetypes, Cauchy dispersion,
 // SIMD-safe 3D Snell refraction, Schlick Fresnel, and explicit k_TIR < 0 Total Internal Reflection.
-// Uses dynamic GLSL ES 3.00 loop bounds + wavefront 1-bounce ping-pong Transform Feedback so
-// ANGLE / SPIR-V shader compilers compile all shaders in < 40 ms without megashader loop unrolling.
+// Uses dynamic GLSL ES 3.00 loop bounds + single-pass 12-bounce Transform Feedback (15x vec4 outputs)
+// so ANGLE / SPIR-V shader compilers compile cleanly without megashader loop unrolling.
 
 export const SHARED_SDF_GLSL = /* glsl */ `
 uniform int u_elemCount;

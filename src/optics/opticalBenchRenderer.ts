@@ -1407,14 +1407,12 @@ export class OpticalBenchRenderer {
       rayCount?: number;
       emitterZ?: number;
       beamHalfSpan?: number;
-      includeGrazingTirBundle?: boolean;
       scissor?: boolean;
     },
   ): void {
-    const rayCount = opts?.rayCount ?? 15;
+    const rayCount = opts?.rayCount ?? 17;
     const emitterZ = opts?.emitterZ ?? -2.85;
     const beamHalfSpan = opts?.beamHalfSpan ?? 0.36;
-    const includeTirBundle = opts?.includeGrazingTirBundle ?? true;
 
     const soot = ARCHIVAL_LITHO_PALETTE.INK_PINE_SOOT_RGB;
     const prussian = ARCHIVAL_LITHO_PALETTE.INK_PRUSSIAN_BLUE_RGB;
@@ -1477,6 +1475,9 @@ export class OpticalBenchRenderer {
       }
     };
 
+    const arrowStep = Math.max(2, Math.round((rayCount - 1) / 5));
+    const arrowOffset = Math.floor((rayCount - 1) / 2) % arrowStep;
+
     for (let r = 0; r < rayCount; r++) {
       const u = rayCount === 1 ? 0.0 : (r / (rayCount - 1)) * 2.0 - 1.0;
       const x0 = u * beamHalfSpan;
@@ -1498,7 +1499,7 @@ export class OpticalBenchRenderer {
             if (k === 3) {
               const incCol = printMode ? soot : ([0.88, 0.90, 0.95] as const);
               pushSeg(v0.x, v0.z, v1.x, v1.z, 1.35 * pxScale, incCol, printMode ? 0.62 : 0.55);
-              if (r % 3 === 1) {
+              if (r > 0 && r < rayCount - 1 && r % arrowStep === arrowOffset) {
                 const mx = v0.x + (v1.x - v0.x) * 0.52;
                 const mz = v0.z + (v1.z - v0.z) * 0.52;
                 pushSeg(mx + 0.028, mz - 0.048, mx, mz, 1.3 * pxScale, incCol, 0.78);
@@ -1518,50 +1519,6 @@ export class OpticalBenchRenderer {
 
             if (isTirSeg && (k === 0 || k === 6)) {
               pushCircle(v0.x, v0.z, 0.032, 1.35 * pxScale, cinnabar, 0.88);
-            }
-          }
-        }
-      }
-    }
-
-    if (includeTirBundle) {
-      const prismElem = elements.find((e) => e.archetype === 3);
-      if (prismElem) {
-        for (let m = -1; m <= 1; m++) {
-          const aimX = prismElem.x + 0.14 + m * 0.045;
-          const aimZ = prismElem.z - 0.35;
-          const dirX = -0.34;
-          const dirZ = 0.94;
-          for (const k of [0, 3, 6]) {
-            const res = traceOpticalRay3D(
-              [aimX, 0.0, aimZ],
-              [dirX, 0.0, dirZ],
-              k,
-              gammaD,
-              [prismElem],
-              2.35,
-            );
-            const verts = res.vertices;
-            for (let b = 0; b < verts.length - 1; b++) {
-              const v0 = verts[b];
-              const v1 = verts[b + 1];
-              const col = v0.isTIR
-                ? cinnabar
-                : printMode
-                  ? bandColorsLitho[k]
-                  : bandColorsDark[k];
-              pushSeg(
-                v0.x,
-                v0.z,
-                v1.x,
-                v1.z,
-                (v0.isTIR ? 1.9 : 1.25) * pxScale,
-                col,
-                v0.isTIR ? 0.90 : 0.55,
-              );
-              if (v0.isTIR && k === 0) {
-                pushCircle(v0.x, v0.z, 0.036, 1.45 * pxScale, cinnabar, 0.92);
-              }
             }
           }
         }
@@ -1742,10 +1699,9 @@ export class OpticalBenchRenderer {
         true,
         pxScale * 0.58,
         {
-          rayCount: 15,
+          rayCount: 17,
           emitterZ: -2.76,
           beamHalfSpan: 0.36,
-          includeGrazingTirBundle: true,
         },
       );
       return;
@@ -1753,7 +1709,6 @@ export class OpticalBenchRenderer {
 
     if (plateId === 'caustic-tilt-matrix') {
       const tiltsDeg = [0, 7, 15, 24] as const;
-      const cellBaseW = Math.floor(resW / 4);
       const batches = oversizedFastCap ? 10 : 32;
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, ts.resolveFbo);
@@ -1835,42 +1790,11 @@ export class OpticalBenchRenderer {
             rayCount: 11,
             emitterZ: -2.15,
             beamHalfSpan: 0.42,
-            includeGrazingTirBundle: false,
             scissor: true,
           },
         );
       }
 
-      if (resW >= 8 && resH >= 4) {
-        const borderCam: BenchCameraMapping = {
-          viewMode: 'schematic',
-          aspect,
-          orthoHalfZ: 1.0,
-          centerZ: 0.0,
-          centerX: 0.0,
-          eye: [0, 4, 0],
-          target: [0, 0, 0],
-          up: [1, 0, 0],
-          fovYRad: 0.6,
-        };
-        const halfX = 1.0 / Math.max(0.25, aspect);
-        const soot = ARCHIVAL_LITHO_PALETTE.INK_PINE_SOOT_RGB;
-        const borderHw = Math.max(1.2, 2.0 * (resH / 190.0) * 0.5);
-        const divSegs: number[] = [];
-        const addLine = (z0: number, x0: number, z1: number, x1: number, hw: number) => {
-          divSegs.push(x0, 0, z0, hw, x1, 0, z1, 0, soot[0], soot[1], soot[2], 0.92);
-        };
-        for (let c = 1; c <= 3; c++) {
-          const zNdc = ((c * cellBaseW) / resW) * 2.0 - 1.0;
-          addLine(zNdc, -halfX, zNdc, halfX, borderHw);
-        }
-        addLine(-0.998, -halfX * 0.994, 0.998, -halfX * 0.994, borderHw);
-        addLine(-0.998, halfX * 0.994, 0.998, halfX * 0.994, borderHw);
-        addLine(-0.998, -halfX * 0.994, -0.998, halfX * 0.994, borderHw);
-        addLine(0.998, -halfX * 0.994, 0.998, halfX * 0.994, borderHw);
-
-        this.drawRawSegments(ts.resolveFbo, [0, 0, resW, resH], borderCam, divSegs, false);
-      }
       return;
     }
 
