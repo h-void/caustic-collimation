@@ -1,4 +1,4 @@
-import { DEFAULT_SEED_U64, Rng64, type PresetIndex } from '../shared/pureCodeContract.ts';
+import { DEFAULT_SEED_U64, Rng64, type PresetIndex } from '../shared/benchConfig.ts';
 import {
   ARCHETYPE_ASPHERIC,
   ARCHETYPE_BICONVEX,

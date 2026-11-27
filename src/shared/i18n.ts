@@ -1,4 +1,4 @@
-import type { PresetIndex, SupportedLocale } from './pureCodeContract.ts';
+import type { PresetIndex, SupportedLocale } from './benchConfig.ts';
 
 export interface LocaleMessages {
   pageTitle: string;

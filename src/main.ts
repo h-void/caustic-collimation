@@ -6,7 +6,7 @@ import { buildPresetElements } from './optics/presets';
 import type { BenchState } from './optics/types';
 import { installArchivalPlateExporter } from './plates/archivalPlateExporter';
 import { installDiagnosticsGetter } from './shared/diagnostics';
-import { parseBootUrlConfig, type SupportedLocale } from './shared/pureCodeContract';
+import { parseBootUrlConfig, type SupportedLocale } from './shared/benchConfig';
 import { BenchHudController } from './ui/benchHud';
 
 function renderWebglUnavailableFallback(lang: SupportedLocale): void {

@@ -1,4 +1,4 @@
-import { ARCHIVAL_LITHO_PALETTE } from '../shared/pureCodeContract.ts';
+import { ARCHIVAL_LITHO_PALETTE } from '../shared/benchConfig.ts';
 import {
   ARCHETYPE_ASPHERIC,
   ARCHETYPE_BICONVEX,

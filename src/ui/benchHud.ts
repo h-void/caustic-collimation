@@ -10,7 +10,7 @@ import {
   type DragInteractionMode,
 } from '../optics/picking';
 import { LOCALES } from '../shared/i18n';
-import type { PresetIndex, SupportedLocale } from '../shared/pureCodeContract';
+import type { PresetIndex, SupportedLocale } from '../shared/benchConfig';
 
 interface ActiveDragSession {
   pointerId: number;

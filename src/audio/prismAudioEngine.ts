@@ -1,4 +1,4 @@
-import { resolveWorkletUrl } from '../shared/pureCodeContract.ts';
+import { resolveWorkletUrl } from '../shared/benchConfig.ts';
 
 export const F0_HZ = 110.0;
 export const PARTIAL_RATIOS = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0] as const;

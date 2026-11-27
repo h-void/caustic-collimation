@@ -4,7 +4,7 @@ import {
   Rng64,
   type PresetIndex,
   type ViewMode,
-} from '../shared/pureCodeContract';
+} from '../shared/benchConfig';
 import { probeFboCapabilities, type FboCapabilities } from './fboCapabilities';
 import {
   computeCameraBasis,
@@ -227,7 +227,7 @@ export class OpticalBenchRenderer {
     this.canvas.addEventListener('webglcontextlost', this.handleContextLost, false);
     this.canvas.addEventListener('webglcontextrestored', this.handleContextRestored, false);
 
-    // Synchronous 100-step boot warmup (67,200 multi-bounce 3D SDF rays >= 65,536!)
+    // Synchronous 100-step boot warmup (67,200 multi-bounce 3D SDF rays)
     this.initGlResources(BOOT_WARMUP_STEPS);
   }
 
@@ -1119,7 +1119,7 @@ export class OpticalBenchRenderer {
       }
     }
 
-    // 1. Single-Pass Warp-Coherent 12-Bounce Transform Feedback (traces all steps*672 rays in 1 draw!)
+    // 1. Single-pass 12-bounce Transform Feedback (traces all steps * 672 rays in one draw)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.enable(gl.RASTERIZER_DISCARD);
     gl.useProgram(this.traceRayProg);
@@ -1155,7 +1155,7 @@ export class OpticalBenchRenderer {
     gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
     gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
 
-    // GPU-resident PBO upload into 960x263 RGBA32F rayPathTex (zero CPU readback, zero VAO divisor staging!)
+    // GPU-resident PBO upload into 960x263 RGBA32F rayPathTex (no CPU readback or VAO staging)
     const uploadRows = Math.max(1, Math.ceil(totalWavefrontRays / RAYS_PER_TEX_ROW));
     gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, this.rayPathVbo);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
@@ -1173,7 +1173,7 @@ export class OpticalBenchRenderer {
     );
     gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER, null);
 
-    // 2. Single-Draw Zero-Attribute Additive Splat Pass (invokes ONLY non-masked beam & Airy rays!)
+    // 2. Single-draw additive splat pass (only non-masked beam and Airy rays)
     const viewProj = computeViewProjMatrix(cam);
     gl.bindFramebuffer(gl.FRAMEBUFFER, splatFbo);
     gl.viewport(vp[0], vp[1], vp[2], vp[3]);

@@ -1,4 +1,4 @@
-import type { ViewMode } from '../shared/pureCodeContract.ts';
+import type { ViewMode } from '../shared/benchConfig.ts';
 import { GLASS_SF11, type OpticalElementState } from './types.ts';
 
 export const MAX_TILT_DEG = 35.0;

@@ -1,4 +1,4 @@
-import type { PresetIndex, ViewMode } from '../shared/pureCodeContract.ts';
+import type { PresetIndex, ViewMode } from '../shared/benchConfig.ts';
 
 export const ARCHETYPE_BICONVEX = 0;
 export const ARCHETYPE_MENISCUS = 1;

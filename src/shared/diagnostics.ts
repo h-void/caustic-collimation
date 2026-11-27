@@ -1,4 +1,4 @@
-import type { PresetIndex, SupportedLocale, ViewMode } from './pureCodeContract.ts';
+import type { PresetIndex, SupportedLocale, ViewMode } from './benchConfig.ts';
 
 export interface CausticAppDiagnostics {
   readonly appId: 'caustic-collimation';
@@ -13,7 +13,7 @@ export interface CausticAppDiagnostics {
   readonly audioState: AudioContextState;
   readonly glError: number;
 
-  // Extended M2 optical & acoustic telemetry
+  // Optical & acoustic telemetry
   readonly elementCount: number;
   readonly selectedElementIndex: number;
   readonly tiltMagnitudeDeg: number;
