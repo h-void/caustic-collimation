@@ -28,7 +28,7 @@ interface ActiveDragSession {
   origThetaY: number;
 }
 
-const HUD_IDLE_TIMEOUT_MS = 3800;
+const HUD_IDLE_TIMEOUT_MS = 8500;
 
 export class BenchHudController {
   private readonly renderer: OpticalBenchRenderer;
@@ -538,7 +538,7 @@ export class BenchHudController {
       try {
         canvas.setPointerCapture(e.pointerId);
       } catch {
-        // Synthetic pointer events in headless automation may omit active pointerId capture
+        // Ignore if pointer capture is unavailable for this event
       }
       this.refreshTelemetry();
     });

@@ -65,7 +65,8 @@ class CausticPrismProcessor extends AudioWorkletProcessor {
 
     for (let k = 0; k < 7; k++) {
       const nk = this.glassA + gammaB / (LAMBDA_UM[k] * LAMBDA_UM[k]);
-      const deltaFk = 5.5 * ((nk - nRef) / denom) * this.tiltRad;
+      const rawDelta = 5.5 * ((nk - nRef) / denom) * this.tiltRad;
+      const deltaFk = Math.max(-1.5, Math.min(1.5, rawDelta));
       const centerFk = F0_HZ * PARTIAL_RATIOS[k];
 
       this.tgtFreqL[k] = Math.max(20.0, centerFk - 0.5 * deltaFk);

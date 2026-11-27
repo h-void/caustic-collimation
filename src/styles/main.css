@@ -94,7 +94,7 @@ html[data-print-mode="true"] #audio-pill {
 }
 
 .hud-container.is-idle {
-  opacity: 0.16;
+  opacity: 0.48;
   transition: opacity 0.65s ease;
 }
 
@@ -243,11 +243,13 @@ html[data-print-mode="true"] #audio-pill {
   color: var(--ink-secondary);
   padding: 5px 9px;
   background: rgba(14, 20, 30, 0.78);
+  backdrop-filter: none;
 }
 
 .hud-presets-group .hud-pill.is-active {
   color: #f4f9ff;
   background: rgba(26, 52, 78, 0.88);
+  border-color: var(--panel-border-active);
 }
 
 .hud-telemetry-dock {

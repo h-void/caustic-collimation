@@ -17,9 +17,11 @@ export interface OpticalAudioParams {
   bandWeights?: readonly number[];
 }
 
+const MAX_BEATING_HZ = 1.5;
+
 /**
  * Signed Cauchy chromatic phase beating Δf_k [Hz] for partial k ∈ {0..6}:
- * Δf_k = 5.5 * ((n(λ_k) - n(λ_3)) / (n(λ_3) - 1)) * Θ
+ * Δf_k = clamp(5.5 * ((n(λ_k) - n(λ_3)) / (n(λ_3) - 1)) * Θ, -1.5, 1.5)
  */
 export function computePartialBeatingHz(k: number, params: OpticalAudioParams): number {
   const idx = Math.max(0, Math.min(6, Math.trunc(k)));
@@ -30,7 +32,8 @@ export function computePartialBeatingHz(k: number, params: OpticalAudioParams): 
   const nRef = params.glassA + gammaB / (AUDIO_LAMBDA_UM[3] * AUDIO_LAMBDA_UM[3]);
   const denom = Math.max(1e-6, nRef - 1.0);
   const nk = params.glassA + gammaB / (AUDIO_LAMBDA_UM[idx] * AUDIO_LAMBDA_UM[idx]);
-  return 5.5 * ((nk - nRef) / denom) * tilt;
+  const raw = 5.5 * ((nk - nRef) / denom) * tilt;
+  return Math.max(-MAX_BEATING_HZ, Math.min(MAX_BEATING_HZ, raw));
 }
 
 export function computeStereoPartialFrequencies(
