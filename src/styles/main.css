@@ -7,17 +7,17 @@
   --font-mono: "DejaVu Sans Mono", "Liberation Mono", "Noto Sans Mono CJK HK", ui-monospace,
     monospace;
 
-  --bg-bench-dark: #0e131b;
+  --bg-bench-dark: #0c1017;
   --paper-litho: #f6f4ef;
-  --panel-bg: rgba(9, 13, 21, 0.92);
-  --panel-bg-hint: rgba(9, 13, 21, 0.86);
-  --panel-border: rgba(246, 244, 239, 0.20);
-  --panel-border-active: rgba(232, 188, 108, 0.82);
-  --ink-ivory: rgba(246, 244, 239, 0.95);
-  --ink-secondary: rgba(246, 244, 239, 0.82);
-  --ink-muted: rgba(246, 244, 239, 0.80);
-  --accent-amber: #ecc274;
-  --accent-cyan: #7ec4f8;
+  --panel-bg: rgba(11, 15, 22, 0.86);
+  --panel-bg-hint: rgba(11, 15, 22, 0.80);
+  --panel-border: rgba(214, 226, 240, 0.18);
+  --panel-border-active: rgba(138, 198, 242, 0.78);
+  --ink-ivory: rgba(240, 245, 252, 0.94);
+  --ink-secondary: rgba(218, 228, 240, 0.80);
+  --ink-muted: rgba(186, 200, 218, 0.74);
+  --accent-amber: #8ac6f2;
+  --accent-cyan: #a8d8ff;
 }
 
 *,
@@ -49,7 +49,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 [tabindex]:focus-visible {
-  outline: 1.5px solid #e2a858;
+  outline: 1.5px solid #8ac6f2;
   outline-offset: 2px;
 }
 
@@ -118,18 +118,19 @@ html[data-print-mode="true"] #audio-pill {
 
 .hud-brand {
   pointer-events: auto;
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  backdrop-filter: blur(8px);
-  padding: 10px 14px;
-  border-radius: 6px;
-  max-width: 480px;
+  background: transparent;
+  border: none;
+  border-left: 2px solid var(--accent-amber);
+  padding: 2px 12px 3px;
+  border-radius: 0;
+  max-width: 440px;
+  text-shadow: 0 1px 10px rgba(6, 10, 16, 0.85);
 }
 
 .hud-eyebrow {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent-amber);
   margin-bottom: 3px;
@@ -137,9 +138,9 @@ html[data-print-mode="true"] #audio-pill {
 
 .hud-title {
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--ink-ivory);
   word-break: keep-all;
 }
@@ -156,20 +157,20 @@ html[data-print-mode="true"] #audio-pill {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 5px;
 }
 
 .hud-pill {
   appearance: none;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(6px);
   color: var(--ink-ivory);
-  font-family: var(--font-sans);
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   line-height: 1.2;
-  padding: 7px 11px;
-  border-radius: 5px;
+  padding: 6px 10px;
+  border-radius: 2px;
   cursor: pointer;
   text-decoration: none;
   transition: border-color 0.14s ease, background-color 0.14s ease, color 0.14s ease;
@@ -177,19 +178,19 @@ html[data-print-mode="true"] #audio-pill {
 }
 
 .hud-pill:hover:not(:disabled) {
-  border-color: rgba(246, 244, 239, 0.48);
-  background: rgba(22, 30, 44, 0.92);
+  border-color: rgba(214, 226, 240, 0.45);
+  background: rgba(20, 29, 44, 0.92);
 }
 
 .hud-pill:disabled {
-  opacity: 0.46;
+  opacity: 0.42;
   cursor: not-allowed;
 }
 
 .hud-pill.is-active {
   border-color: var(--panel-border-active);
-  color: #fff8eb;
-  background: rgba(48, 38, 20, 0.86);
+  color: #f4f9ff;
+  background: rgba(26, 52, 78, 0.84);
 }
 
 .source-link {
@@ -209,7 +210,7 @@ html[data-print-mode="true"] #audio-pill {
   right: 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   z-index: 10;
   pointer-events: none;
 }
@@ -218,7 +219,7 @@ html[data-print-mode="true"] #audio-pill {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 7px;
+  gap: 6px;
 }
 
 .hud-presets-group,
@@ -229,29 +230,29 @@ html[data-print-mode="true"] #audio-pill {
   align-items: center;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  backdrop-filter: blur(8px);
-  border-radius: 6px;
+  backdrop-filter: blur(6px);
+  border-radius: 2px;
 }
 
 .hud-presets-group {
-  gap: 6px;
-  padding: 5px 8px;
+  gap: 4px;
+  padding: 4px 6px;
 }
 
 .hud-presets-group .hud-pill {
   color: var(--ink-secondary);
-  padding: 6px 10px;
-  background: rgba(14, 20, 31, 0.82);
+  padding: 5px 9px;
+  background: rgba(14, 20, 30, 0.78);
 }
 
 .hud-presets-group .hud-pill.is-active {
-  color: #fff8eb;
-  background: rgba(48, 38, 20, 0.88);
+  color: #f4f9ff;
+  background: rgba(26, 52, 78, 0.88);
 }
 
 .hud-telemetry-dock {
   gap: 8px;
-  padding: 6px 10px;
+  padding: 5px 10px;
 }
 
 .hud-vernier-inline {
@@ -368,27 +369,27 @@ html[data-print-mode="true"] #audio-pill {
   justify-self: center;
   pointer-events: auto;
   appearance: none;
-  background: rgba(11, 17, 27, 0.92);
-  border: 1px solid rgba(126, 196, 248, 0.44);
-  backdrop-filter: blur(8px);
+  background: rgba(11, 15, 22, 0.88);
+  border: 1px solid rgba(138, 198, 242, 0.42);
+  backdrop-filter: blur(6px);
   color: var(--ink-ivory);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  padding: 7px 14px;
-  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 13px;
+  border-radius: 2px;
   cursor: pointer;
   white-space: nowrap;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .hud-audio-pill:hover {
-  border-color: rgba(126, 196, 248, 0.72);
-  background: rgba(16, 25, 39, 0.95);
+  border-color: rgba(138, 198, 242, 0.72);
+  background: rgba(18, 27, 42, 0.94);
 }
 
 .hud-audio-pill[data-audio-status="active"] {
-  border-color: rgba(132, 225, 168, 0.62);
-  background: rgba(15, 36, 28, 0.90);
+  border-color: rgba(118, 214, 162, 0.65);
+  background: rgba(14, 34, 28, 0.90);
 }
 
 .hud-hint {
@@ -398,10 +399,10 @@ html[data-print-mode="true"] #audio-pill {
   line-height: 1.35;
   color: var(--ink-muted);
   background: var(--panel-bg-hint);
-  backdrop-filter: blur(8px);
-  padding: 5px 10px;
-  border-radius: 5px;
-  border: 1px solid rgba(246, 244, 239, 0.16);
+  backdrop-filter: blur(6px);
+  padding: 5px 9px;
+  border-radius: 2px;
+  border: 1px solid rgba(214, 226, 240, 0.14);
   white-space: nowrap;
 }
 
@@ -786,30 +787,31 @@ html[data-print-mode="true"] .exit-print-pill {
 
 .webgl-status-btn {
   appearance: none;
-  background: rgba(48, 38, 20, 0.90);
+  background: rgba(26, 52, 78, 0.90);
   border: 1px solid var(--panel-border-active);
-  color: #fff8eb;
-  font-family: var(--font-sans);
-  font-size: 12.5px;
+  color: #f4f9ff;
+  font-family: var(--font-mono);
+  font-size: 12px;
   padding: 8px 15px;
-  border-radius: 6px;
+  border-radius: 2px;
   cursor: pointer;
   text-decoration: none;
   transition: background-color 0.14s ease, border-color 0.14s ease;
 }
 
 .webgl-status-btn:hover {
-  background: rgba(66, 52, 26, 0.95);
-  border-color: #f4d08c;
+  background: rgba(34, 68, 102, 0.95);
+  border-color: #b4dcfa;
 }
 
 .webgl-status-link {
   color: var(--accent-cyan);
-  font-size: 12.5px;
+  font-family: var(--font-mono);
+  font-size: 12px;
   text-decoration: none;
   padding: 7px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(126, 196, 248, 0.28);
+  border-radius: 2px;
+  border: 1px solid rgba(138, 198, 242, 0.30);
 }
 
 .webgl-status-link:hover {

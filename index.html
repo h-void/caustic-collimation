@@ -3,18 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CAUSTIC COLLIMATION // 光軸與焦散</title>
+    <title>Caustic Collimation — Interactive Optical Bench</title>
     <meta
       name="description"
-      content="CAUSTIC COLLIMATION // 光軸與焦散 — a WebGL2 3D implicit-SDF optical bench: vector Snell refraction, Fresnel & TIR, 7-band Cauchy dispersion caustics and a stereo beating overtone prism, all computed live in the browser."
+      content="Caustic Collimation — an interactive WebGL2 3D optical bench exploring lens tilt, Snell refraction, total internal reflection, 7-band Cauchy glass dispersion, and stereo beating overtones."
     />
-    <meta name="theme-color" content="#141a26" />
+    <meta name="theme-color" content="#0d121a" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="h-void" />
-    <meta property="og:title" content="CAUSTIC COLLIMATION // 光軸與焦散" />
+    <meta property="og:title" content="Caustic Collimation — Interactive Optical Bench" />
     <meta
       property="og:description"
-      content="A WebGL2 3D SDF optical bench — vector Snell refraction, Fresnel & TIR, 7-band Cauchy spectral caustics and a stereo beating overtone prism."
+      content="Interactive WebGL2 3D optical bench with 7-band Cauchy glass dispersion, 2D ray diagrams, and tilt-driven stereo overtone beating."
     />
     <meta property="og:url" content="https://h-void.github.io/caustic-collimation/" />
     <meta property="og:image" content="https://h-void.github.io/caustic-collimation/og.jpg" />
@@ -22,7 +22,7 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Spectral caustics splitting through lenses and a flint prism on a dark 3D optical bench" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="CAUSTIC COLLIMATION // 光軸與焦散" />
+    <meta name="twitter:title" content="Caustic Collimation — Interactive Optical Bench" />
     <meta name="twitter:image" content="https://h-void.github.io/caustic-collimation/og.jpg" />
     <link
       rel="icon"
@@ -42,16 +42,16 @@
       class="exit-print-pill"
       type="button"
     >
-      × Exit Print [P]
+      × Back to Bench [P]
     </button>
 
     <div id="hud-container" class="hud-container hud-chrome">
       <header class="hud-topbar hud-chrome">
         <div class="hud-brand">
-          <div id="hud-eyebrow" class="hud-eyebrow">WORK 02 // COMPUTATIONAL OPTICS &amp; VISUAL MUSIC</div>
-          <h1 id="hud-title" class="hud-title">CAUSTIC COLLIMATION</h1>
+          <div id="hud-eyebrow" class="hud-eyebrow">OPTICAL BENCH · 420–680 NM</div>
+          <h1 id="hud-title" class="hud-title">Caustic Collimation</h1>
           <div id="hud-subtitle" class="hud-subtitle">
-            光軸與焦散 · Sculpting Off-Axis Aberrations &amp; Spectral Caustics
+            光軸與焦散 · Interactive Glass Dispersion &amp; Overtone Bench
           </div>
         </div>
 
@@ -59,7 +59,7 @@
           <button id="btn-drag-mode" class="hud-pill" type="button">Drag: Move</button>
           <button id="btn-view-mode" class="hud-pill" type="button">View: 3D Bench [V]</button>
           <button id="btn-breathing" class="hud-pill" type="button">Drift: Still [B]</button>
-          <button id="btn-print-mode" class="hud-pill" type="button">Archival Lithograph [P]</button>
+          <button id="btn-print-mode" class="hud-pill" type="button">Ray Diagram [P]</button>
           <button id="btn-reset-bench" class="hud-pill" type="button">Collimate / Reset [R]</button>
           <button id="btn-lang-toggle" class="hud-pill" type="button">繁中</button>
           <a
@@ -133,7 +133,7 @@
           </button>
           <div class="hud-footer-right">
             <div id="hud-interaction-hint" class="hud-hint">
-              Drag: translate (x, z) · Shift / RMB / Tilt mode: tilt (±35°) · [1–5] [V] [B] [P] [M] [R]
+              Drag: move · Shift / RMB: tilt (±35°) · [1–5] [V] [B] [P] [M] [R]
             </div>
           </div>
         </div>

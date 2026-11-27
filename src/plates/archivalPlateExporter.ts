@@ -56,7 +56,7 @@ export async function renderArchivalPlate(
       : Math.max(16, clampedW);
   const rawAccumH = Math.max(16, clampedH);
   const oversized = clampedW > 4096 || clampedH > 4096;
-  const maxAccDim = oversized ? 512 : 680;
+  const maxAccDim = oversized ? 512 : 1024;
   const scale = Math.min(1.0, maxAccDim / Math.max(rawAccumW, rawAccumH));
   const accumW = Math.max(16, Math.round(rawAccumW * scale));
   const accumH = Math.max(16, Math.round(rawAccumH * scale));

@@ -1660,10 +1660,10 @@ export class OpticalBenchRenderer {
         focalPlaneZ: 1.92,
         focalSlabHalf: 0.36,
         fanSpreadRad: 0.015,
-        beamHalfWidthPx: Math.max(1.2, 1.45 * accScale),
-        rayGain: 0.038,
-        airyRadiusPx: Math.max(8.0, 12.0 * accScale),
-        airyGain: 0.048,
+        beamHalfWidthPx: Math.max(1.05, 1.12 * accScale),
+        rayGain: 0.044,
+        airyRadiusPx: Math.max(6.5, 8.8 * accScale),
+        airyGain: 0.042,
       });
       this.executeResolvePass(
         ts.resolveFbo,

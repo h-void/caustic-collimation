@@ -30,21 +30,21 @@ function renderWebglUnavailableFallback(lang: SupportedLocale): void {
   const img = document.createElement('img');
   img.className = 'webgl-fallback-preview';
   img.src = './og.jpg';
-  img.alt = 'CAUSTIC COLLIMATION // 光軸與焦散 — Static optical bench preview';
+  img.alt = 'Caustic Collimation — Static optical bench preview';
 
   const body = document.createElement('div');
   body.className = 'webgl-status-body';
 
   const eyebrow = document.createElement('div');
   eyebrow.className = 'webgl-status-eyebrow';
-  eyebrow.textContent = 'WORK 02 // WEBGL2 REQUIRED · 需要 WEBGL2 繪圖支援';
+  eyebrow.textContent = 'OPTICAL BENCH · WEBGL2 REQUIRED / 需要 WEBGL2 繪圖支援';
 
   const title = document.createElement('h1');
   title.className = 'webgl-status-title';
   title.textContent =
     lang === 'zh-HK'
       ? '光軸與焦散 · 需要 WebGL2 才能即時演算'
-      : 'CAUSTIC COLLIMATION · WebGL2 Required';
+      : 'Caustic Collimation · WebGL2 Required';
 
   const enCopy =
     'This real-time 3D SDF optical bench requires WebGL2 graphics support, which is unavailable or disabled in this browser environment. Enable hardware acceleration or open the bench in a modern WebGL2-capable browser.';
